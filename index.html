@@ -136,6 +136,16 @@
           <span class="live-dot w-2 h-2 rounded-full bg-slate-300"></span><span id="status-text">Connecting…</span>
         </span>
         <p id="status-detail" class="text-xs text-slate-400 mt-1"></p>
+
+        <!-- Which figures the page is built on. It belongs at the top because it
+             governs every number below it, not only the panel it used to sit in. -->
+        <div id="view-toggle" class="hidden mt-3">
+          <div class="inline-flex rounded-lg overflow-hidden text-xs font-semibold border border-white/25">
+            <button id="btn-organic" class="px-3 py-1.5 transition">Organic baseline</button>
+            <button id="btn-all" class="px-3 py-1.5 transition border-l border-white/25">As collected</button>
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1.5 sm:max-w-72 sm:ml-auto leading-snug" id="mode-note"></p>
+        </div>
       </div>
     </div>
   </header>
@@ -192,14 +202,7 @@
       <p class="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed" id="campaign-detail"></p>
       <div id="campaign-visual" class="mt-5"></div>
       <div id="campaign-list" class="mt-4 space-y-1"></div>
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4 pt-3 border-t border-slate-100">
-        <span class="text-[10px] uppercase tracking-widest text-slate-400">Showing</span>
-        <div class="inline-flex rounded-lg border border-slate-300 overflow-hidden text-xs font-semibold">
-          <button id="btn-organic" class="px-3 py-1.5 transition">Organic baseline</button>
-          <button id="btn-all" class="px-3 py-1.5 transition border-l border-slate-300">As collected</button>
-        </div>
-        <span class="text-xs text-slate-400" id="mode-note"></span>
-      </div>
+      <p class="text-xs text-slate-400 mt-4 pt-3 border-t border-slate-100">Switch between the two views using the control at the top of the page.</p>
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-5">
@@ -1189,12 +1192,14 @@ function renderTopPosts(posts) {
 }
 
 function renderCampaignPanel(campaigns) {
-  if (!campaigns.length) { hide("campaign-panel"); return; }
+  // With nothing to exclude there is no choice to offer, so the control goes
+  // too rather than sitting in the header doing nothing.
+  if (!campaigns.length) { hide("campaign-panel"); hide("view-toggle"); return; }
   show("campaign-panel");
   const totalAll = ALL_POSTS.reduce((a, p) => a + engOf(p), 0);
   // No engagement at all means there is nothing to state a share of. Without
   // this the headline divides by zero and offers the reader "Infinity%".
-  if (!totalAll) { hide("campaign-panel"); return; }
+  if (!totalAll) { hide("campaign-panel"); hide("view-toggle"); return; }
   const biggest = [...campaigns].sort((a, b) => engOf(b) - engOf(a))[0];
 
   // Lead with what happened. This is a finding about how a competitor bought
@@ -1242,10 +1247,16 @@ function renderCampaignPanel(campaigns) {
       (<span class="num">${nf.format(c.comments_count || 0)}</span> comments) ·
       <span class="num">${pct(engOf(c) / totalAll)}</span> of all tracked engagement</div>`).join("");
 
-  const on = "bg-slate-800 text-white", off = "bg-white text-slate-600 hover:bg-slate-50";
+  // Sits on the dark header now, so the selected and unselected states invert.
+  show("view-toggle");
+  const on = "bg-white text-slate-900", off = "text-slate-300 hover:bg-white/10";
   $("btn-organic").className = "px-3 py-1.5 transition " + (organicOnly ? on : off);
-  $("btn-all").className = "px-3 py-1.5 transition border-l border-slate-300 " + (organicOnly ? off : on);
-  $("mode-note").textContent = organicOnly ? "Campaign posts excluded — typical output" : "Everything included — one giveaway dominates";
+  $("btn-all").className = "px-3 py-1.5 transition border-l border-white/25 " + (organicOnly ? off : on);
+
+  const many = campaigns.length > 1;
+  $("mode-note").textContent = organicOnly
+    ? `Excluding ${many ? campaigns.length + " prize giveaways" : "one prize giveaway"} — what these banks earn in a normal week.`
+    : `Including ${many ? "the giveaways" : "the giveaway"} — ${many ? "those posts" : "that one post"} then decides most of the ranking.`;
 }
 
 // ---------------------------------------------------------------------------
