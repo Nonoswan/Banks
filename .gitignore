@@ -1,6 +1,9 @@
 # Local editor/tooling config — contains machine-specific absolute paths
 .claude/
 
+# Generated preview of an exported deck, not source
+deck-preview.html
+
 # Python
 __pycache__/
 *.pyc
