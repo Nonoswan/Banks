@@ -154,19 +154,16 @@
   <main id="dashboard" class="hidden">
 
     <section id="campaign-panel" class="reveal hidden mb-5 bg-white border-l-4 border-amber-400 rounded-r-xl shadow-sm p-4 sm:p-5">
-      <div class="flex flex-col sm:flex-row gap-4 justify-between sm:items-start">
-        <div class="flex-1 min-w-0">
-          <h3 class="font-bold text-slate-900 text-sm">Campaign posts detected</h3>
-          <p class="text-xs text-slate-600 mt-1" id="campaign-detail"></p>
-          <div id="campaign-list" class="mt-3 space-y-1"></div>
+      <h3 class="font-bold text-slate-900 text-sm sm:text-base" id="campaign-headline"></h3>
+      <p class="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed" id="campaign-detail"></p>
+      <div id="campaign-list" class="mt-3 space-y-1"></div>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4 pt-3 border-t border-slate-100">
+        <span class="text-[10px] uppercase tracking-widest text-slate-400">Showing</span>
+        <div class="inline-flex rounded-lg border border-slate-300 overflow-hidden text-xs font-semibold">
+          <button id="btn-organic" class="px-3 py-1.5 transition">Organic baseline</button>
+          <button id="btn-all" class="px-3 py-1.5 transition border-l border-slate-300">As collected</button>
         </div>
-        <div class="shrink-0 sm:text-right">
-          <div class="inline-flex w-full sm:w-auto rounded-lg border border-slate-300 overflow-hidden text-xs font-semibold">
-            <button id="btn-organic" class="flex-1 px-3 sm:px-4 py-2 transition">Organic baseline</button>
-            <button id="btn-all" class="flex-1 px-3 sm:px-4 py-2 transition border-l border-slate-300">As collected</button>
-          </div>
-          <p class="text-xs text-slate-400 mt-2 sm:max-w-56" id="mode-note"></p>
-        </div>
+        <span class="text-xs text-slate-400" id="mode-note"></span>
       </div>
     </section>
 
@@ -197,32 +194,37 @@
          position is the story when the client is fourth of six. -->
     <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
       <h3 class="font-bold text-slate-800 text-sm sm:text-base">Market Standings</h3>
-      <p class="text-xs text-slate-400 mb-5">Engagement share of voice, ranked</p>
+      <p class="text-xs text-slate-400">Engagement share of voice, ranked</p>
+      <p class="text-xs text-slate-500 italic mt-1 mb-5">In short: where BBK places. The figure beside each bar is the distance to the leader.</p>
       <div id="standings" class="space-y-3.5"></div>
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-5">
       <div class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
         <h3 class="font-bold text-slate-800 text-sm sm:text-base">Engagement Share of Voice</h3>
-        <p class="text-xs text-slate-400 mb-4">Total likes + comments across the tracked window</p>
+        <p class="text-xs text-slate-400">Total likes + comments across the tracked window</p>
+        <p class="text-xs text-slate-500 italic mt-1 mb-4">In short: who owns the conversation. Each slice is one bank's share of every interaction in the market.</p>
         <div class="h-64 sm:h-72"><canvas id="chart-sov"></canvas></div>
       </div>
       <div class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
         <h3 class="font-bold text-slate-800 text-sm sm:text-base">Engagement Rate per Follower</h3>
-        <p class="text-xs text-slate-400 mb-4">Avg engagement per post ÷ followers. Normalises for account size.</p>
+        <p class="text-xs text-slate-400">Avg engagement per post ÷ followers. Normalises for account size.</p>
+        <p class="text-xs text-slate-500 italic mt-1 mb-4">In short: how hard each bank's audience works. A large account with a short bar is not using the audience it already owns.</p>
         <div class="h-64 sm:h-72"><canvas id="chart-rate"></canvas></div>
       </div>
     </section>
 
     <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
       <h3 class="font-bold text-slate-800 text-sm sm:text-base">Share of Voice vs Share of Audience</h3>
-      <p class="text-xs text-slate-400 mb-4">Bars above the dashed line earn more attention than their size implies.</p>
+      <p class="text-xs text-slate-400">Bars above the dashed line earn more attention than their size implies.</p>
+      <p class="text-xs text-slate-500 italic mt-1 mb-4">In short: the dashed line is the audience a bank owns; the bar is the attention it earns. A bar below its line means the reach is there and the content is not converting it.</p>
       <div class="h-72 sm:h-80"><canvas id="chart-gap"></canvas></div>
     </section>
 
     <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
       <h3 class="font-bold text-slate-800 text-sm sm:text-base">Format</h3>
-      <p class="text-xs text-slate-400 mb-5">Average engagement per post by type, every bank</p>
+      <p class="text-xs text-slate-400">Average engagement per post by type, every bank</p>
+      <p class="text-xs text-slate-500 italic mt-1 mb-5">In short: which kinds of post earn most. The small figure after each number is how many posts sit behind it — treat anything under three lightly.</p>
       <div id="format-body" class="space-y-3.5 mb-7"></div>
       <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
         <table class="w-full text-left border-collapse text-xs sm:text-sm">
@@ -236,7 +238,8 @@
 
     <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
       <h3 class="font-bold text-slate-800 text-sm sm:text-base">Language</h3>
-      <p class="text-xs text-slate-400 mb-5">By share of Arabic against Latin characters in the caption, every bank</p>
+      <p class="text-xs text-slate-400">By share of Arabic against Latin characters in the caption, every bank</p>
+      <p class="text-xs text-slate-500 italic mt-1 mb-5">In short: whether writing in Arabic, English or a mix of both changes how much a post earns.</p>
       <div id="language-body" class="space-y-3.5 mb-7"></div>
       <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
         <table class="w-full text-left border-collapse text-xs sm:text-sm">
@@ -246,6 +249,20 @@
       </div>
       <p id="language-note" class="text-xs sm:text-sm text-slate-700 mt-6 leading-relaxed border-l-4 pl-4"
         style="border-color: var(--bbk)"></p>
+    </section>
+
+    <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
+      <h3 class="font-bold text-slate-800 text-sm sm:text-base">Purpose &amp; Sustainability Content</h3>
+      <p class="text-xs text-slate-400">Community, education, youth, environment and inclusion, against everything else</p>
+      <p class="text-xs text-slate-500 italic mt-1 mb-5">In short: whether content built around purpose earns more attention than content built around products — and who in this market is publishing it.</p>
+      <div id="purpose-body" class="space-y-3.5 mb-7"></div>
+      <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+          <thead id="purpose-head"></thead>
+          <tbody id="purpose-table" class="text-slate-700"></tbody>
+        </table>
+      </div>
+      <p id="purpose-note" class="text-xs sm:text-sm text-slate-700 mt-6 leading-relaxed border-l-4 pl-4" style="border-color: var(--bbk)"></p>
     </section>
 
     <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
@@ -271,7 +288,8 @@
     </section>
 
     <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
-      <h3 class="font-bold text-slate-800 text-sm sm:text-base mb-4">Full Breakdown</h3>
+      <h3 class="font-bold text-slate-800 text-sm sm:text-base">Full Breakdown</h3>
+      <p class="text-xs text-slate-500 italic mt-1 mb-4">In short: every figure behind the charts above, per bank.</p>
       <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
         <table class="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
@@ -670,6 +688,44 @@ const LANGUAGES = {
   },
 };
 
+// Purpose and sustainability content, for a reader whose remit it is.
+//
+// Commercial intent is tested first and wins: a prize draw that mentions youth
+// is a prize post. Two keyword sets were removed after auditing what they
+// actually caught — الوطني ("national") sits inside بنك البحرين الوطني, so it
+// scored every NBB brand mention as purpose content and put them at 100%, and
+// intern* matched "International". Both produced confident, wrong findings.
+const COMMERCIAL_RE = /\b(prize|prizes|win|winner|winners|reward|draw|giveaway|jackpot|hayrat|card|account|financing|loan|deposit|bond|profit|dividend)\b|جائزة|جوائز|الفوز|فائز|اربح|سحب|مكافآت|الهيرات|بطاقة|تمويل|حساب|وديعة|أودع|سندات|الأرباح|المالية/i;
+const PURPOSE_RE = /\b(sustainab\w*|environment\w*|recycl\w*|climate|communit\w*|csr|educat\w*|student|students|school|schools|universit\w*|scholarship|training|youth|literacy|charit\w*|donat\w*|volunteer\w*|awareness|inclusi\w*|disabilit\w*|accessib\w*|heritage|sponsorship|wellbeing|empower\w*)\b|استدام\S*|البيئة|بيئي\S*|مجتمع\S*|تعليم\S*|طلبة|طلاب|المدارس|جامع\S*|منحة|تدريب|توعية|تبرع\S*|تطوع\S*|تراث|مبادرة|تمكين|ذوي الاحتياجات|يوم الشباب/i;
+
+const PURPOSE = {
+  order: ["purpose", "other"],
+  labels: { purpose: "Purpose-led", other: "Commercial & everything else" },
+  short: { purpose: "purpose", other: "the rest" },
+  of: (p) => {
+    const c = p.caption || "";
+    return !COMMERCIAL_RE.test(c) && PURPOSE_RE.test(c) ? "purpose" : "other";
+  },
+  // Bespoke, because the generic phrasing ("BBK runs commercial for 80% of its
+  // posts") reads badly for a two-group split, and the sample needs saying.
+  conclude: (groups, ctx2) => {
+    const pu = groups.find((g) => g.key === "purpose");
+    const rest = groups.find((g) => g.key === "other");
+    if (!pu || !rest || !pu.n) return "No purpose-led posts in this window.";
+    const none = ctx2.banks.filter((b) => ctx2.cell(b, "purpose").n === 0);
+    const top = ctx2.banks
+      .map((b) => ({ b, share: ctx2.cell(b, "purpose").n / ctx2.overall[b].length }))
+      .sort((x, y) => y.share - x.share)[0];
+    let out = `Purpose-led posts average ${nf.format(Math.round(pu.avg))} interactions against ${nf.format(Math.round(rest.avg))} for everything else — ${(pu.avg / Math.max(rest.avg, 1)).toFixed(1)}× the return, on ${pu.n} posts market-wide. Read it as a position worth testing, not a settled result.`;
+    if (pu.myN) {
+      out += ` ${CLIENT}'s ${pu.myN === 1 ? "single purpose post earns" : pu.myN + " purpose posts average"} ${nf.format(Math.round(pu.myAvg))} against ${nf.format(Math.round(rest.myAvg))} for the rest of its output.`;
+    }
+    out += ` ${top.b} publishes the most at ${pct(top.share)} of its posts.`;
+    if (none.length) out += ` ${none.length} of the ${ctx2.banks.length} banks published none at all — the position is largely unoccupied.`;
+    return out;
+  },
+};
+
 function groupStats(posts, spec) {
   const mean = (l) => (l.length ? l.reduce((a, p) => a + engOf(p), 0) / l.length : null);
   return spec.order.map((key) => {
@@ -745,6 +801,10 @@ function renderGroup(prefix, posts, spec, minForClaim = 3) {
   }).join("");
 
   // --- conclusion ---
+  if (spec.conclude) {
+    $(prefix + "-note").textContent = spec.conclude(groups, { banks, cell, overall, posts });
+    return;
+  }
   const solid = groups.filter((g) => g.n >= minForClaim).sort((a2, b2) => b2.avg - a2.avg);
   if (solid.length < 2) {
     $(prefix + "-note").textContent = "Too few posts in this window to compare these reliably.";
@@ -897,11 +957,11 @@ function recommendations({ rows }, posts, campaigns) {
   if (bbk.audSoV) {
     const index = bbk.engSoV / bbk.audSoV;
     if (index < 0.9) {
-      add("red", index.toFixed(2) + "×", "attention per unit of audience",
+      add("red", index.toFixed(2) + "×", "attention vs audience",
         "The audience is bigger than the return on it",
         `${CLIENT} holds ${pct(bbk.audSoV)} of the market's followers but captures ${pct(bbk.engSoV)} of its engagement. The audience asset is already built and already paid for; it is not converting. That is a question of what gets published against it, not of how much is spent acquiring more.`);
     } else if (index > 1.1) {
-      add("green", index.toFixed(2) + "×", "attention per unit of audience",
+      add("green", index.toFixed(2) + "×", "attention vs audience",
         "The content outperforms the audience behind it",
         `${CLIENT} captures ${pct(bbk.engSoV)} of engagement from ${pct(bbk.audSoV)} of followers. What is published is working; reach is the binding constraint, and that one does respond to spend.`);
     }
@@ -938,6 +998,21 @@ function recommendations({ rows }, posts, campaigns) {
     add("amber", (bestFmt.avg / Math.max(leaned.avg, 1)).toFixed(1) + "×", `${FORMATS.short[bestFmt.key]} vs ${FORMATS.short[leaned.key]}`,
       `${CLIENT} is weighted towards the weaker format`,
       `${leaned.label} accounts for ${pct(leaned.myN / myFmtN)} of ${CLIENT}'s posts and averages ${nf.format(Math.round(leaned.avg))} across the market, against ${nf.format(Math.round(bestFmt.avg))} for ${bestFmt.label.toLowerCase()}. ${CLIENT}'s own posts follow the same pattern, so this is a mix decision rather than a production one.`);
+  }
+
+  // Purpose sits in this reader's remit, so it gets its own point rather than
+  // being folded into themes — but only where the gap is wide enough to mean
+  // something on a small sample.
+  const pur = groupStats(posts, PURPOSE);
+  const purposeG = pur.find((g) => g.key === "purpose");
+  const restG = pur.find((g) => g.key === "other");
+  if (purposeG && restG && purposeG.n >= 3 && purposeG.avg > restG.avg * 1.15) {
+    const own = purposeG.myN && restG.myAvg
+      ? ` ${CLIENT}'s own ${purposeG.myN === 1 ? "purpose post earns" : purposeG.myN + " purpose posts average"} ${nf.format(Math.round(purposeG.myAvg))} against ${nf.format(Math.round(restG.myAvg))} for the rest of its output — its strongest content in this window.`
+      : "";
+    add("green", (purposeG.avg / Math.max(restG.avg, 1)).toFixed(1) + "×", "purpose vs the rest",
+      "Purpose-led content earns more than commercial content",
+      `Posts built around community, education, youth or environment average ${nf.format(Math.round(purposeG.avg))} interactions against ${nf.format(Math.round(restG.avg))} for everything else, across ${purposeG.n} posts market-wide.${own} The sample is small enough that this is a position to test rather than a conclusion — but it is cheap to test, and most of this market has not occupied it.`);
   }
 
   const allLangs = groupStats(posts, LANGUAGES);
@@ -1023,8 +1098,20 @@ function renderCampaignPanel(campaigns) {
   if (!campaigns.length) { hide("campaign-panel"); return; }
   show("campaign-panel");
   const totalAll = ALL_POSTS.reduce((a, p) => a + engOf(p), 0);
+  // No engagement at all means there is nothing to state a share of. Without
+  // this the headline divides by zero and offers the reader "Infinity%".
+  if (!totalAll) { hide("campaign-panel"); return; }
+  const biggest = [...campaigns].sort((a, b) => engOf(b) - engOf(a))[0];
+
+  // Lead with what happened. This is a finding about how a competitor bought
+  // share, not a display setting — the control belongs underneath it.
+  $("campaign-headline").textContent = campaigns.length === 1
+    ? `One prize draw took ${pct(engOf(biggest) / totalAll)} of this market's engagement`
+    : `${campaigns.length} prize campaigns took ${pct(campaigns.reduce((a, c) => a + engOf(c), 0) / totalAll)} of this market's engagement`;
+
   $("campaign-detail").textContent =
-    `${campaigns.length} post${campaigns.length > 1 ? "s" : ""} earned more than ${OUTLIER_MULTIPLE}× the posting account's own median — the signature of a prize competition rather than normal output.`;
+    `${campaigns.length === 1 ? "One post" : campaigns.length + " posts"} earned more than ${OUTLIER_MULTIPLE}× the posting account's own median, which is the signature of a giveaway rather than normal output. ` +
+    `Left in, ${campaigns.length === 1 ? "it alone" : "they"} would decide every ranking below. The default view sets ${campaigns.length === 1 ? "it" : "them"} aside so the comparison reflects what these banks publish week to week.`;
   $("campaign-list").innerHTML = campaigns.sort((a, b) => engOf(b) - engOf(a)).map((c) => `
     <div class="text-xs text-slate-600"><span class="font-semibold">${esc(c.bank_name)}</span> ·
       <span class="num">${nf.format(engOf(c))}</span> interactions
@@ -1032,8 +1119,8 @@ function renderCampaignPanel(campaigns) {
       <span class="num">${pct(engOf(c) / totalAll)}</span> of all tracked engagement</div>`).join("");
 
   const on = "bg-slate-800 text-white", off = "bg-white text-slate-600 hover:bg-slate-50";
-  $("btn-organic").className = "flex-1 px-3 sm:px-4 py-2 transition " + (organicOnly ? on : off);
-  $("btn-all").className = "flex-1 px-3 sm:px-4 py-2 transition border-l border-slate-300 " + (organicOnly ? off : on);
+  $("btn-organic").className = "px-3 py-1.5 transition " + (organicOnly ? on : off);
+  $("btn-all").className = "px-3 py-1.5 transition border-l border-slate-300 " + (organicOnly ? off : on);
   $("mode-note").textContent = organicOnly ? "Campaign posts excluded — typical output" : "Everything included — one giveaway dominates";
 }
 
@@ -1222,6 +1309,7 @@ function render() {
   renderTable(agg);
   renderGroup("format", posts, FORMATS);
   renderGroup("language", posts, LANGUAGES);
+  renderGroup("purpose", posts, PURPOSE);
   renderThemes(posts);
   renderRecommendations(agg, posts, campaigns);
   renderTopPosts(posts);
