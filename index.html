@@ -6,27 +6,53 @@
 <title>BBK Competitor Intelligence — Share of Voice</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  :root { --bbk: #C8102E; }
+  :root { --bbk: #C8102E; --bbk-dark: #8E0B20; }
   .num { font-variant-numeric: tabular-nums; }
+
+  /* Scroll-reveal. Elements start displaced and settle as they enter view. */
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .55s ease-out, transform .55s ease-out; }
+  .reveal.in { opacity: 1; transform: none; }
+
+  .card { transition: box-shadow .25s ease, transform .25s ease; }
+  .card:hover { box-shadow: 0 10px 30px -12px rgba(15,23,42,.25); transform: translateY(-2px); }
+
+  .hero { background: linear-gradient(135deg, #0F172A 0%, #1E293B 55%, #33131B 100%); }
+
+  @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  .live-dot { animation: pulseDot 2s ease-in-out infinite; }
+
+  #btn-export:disabled { opacity: .6; cursor: wait; }
+
+  /* Anyone who has asked their OS for less motion gets none of it. */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+    .card:hover { transform: none; }
+    .live-dot { animation: none; }
+  }
 </style>
 </head>
 <body class="bg-slate-100 min-h-screen">
-<div class="max-w-7xl mx-auto p-6">
+<div class="max-w-7xl mx-auto p-3 sm:p-6">
 
-  <header class="mb-4 flex flex-wrap gap-4 justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-    <div>
-      <h1 class="text-2xl font-bold text-slate-900">BBK Competitor Intelligence</h1>
-      <p class="text-sm text-slate-500">Instagram share of voice · Bahrain retail banking</p>
-    </div>
-    <div class="text-right">
-      <span id="status-pill" class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">Connecting…</span>
-      <p id="status-detail" class="text-xs text-slate-400 mt-1"></p>
+  <header class="hero mb-4 rounded-2xl shadow-lg p-5 sm:p-7 text-white">
+    <div class="flex flex-wrap gap-4 justify-between items-start">
+      <div class="min-w-0">
+        <h1 class="text-xl sm:text-3xl font-bold tracking-tight">BBK Competitor Intelligence</h1>
+        <p class="text-xs sm:text-sm text-slate-300 mt-1">Instagram share of voice · Bahrain retail banking</p>
+      </div>
+      <div class="text-right shrink-0">
+        <span id="status-pill" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-slate-200">
+          <span class="live-dot w-2 h-2 rounded-full bg-slate-300"></span><span id="status-text">Connecting…</span>
+        </span>
+        <p id="status-detail" class="text-xs text-slate-400 mt-1"></p>
+      </div>
     </div>
   </header>
 
-  <div id="empty-state" class="hidden bg-white border border-amber-300 rounded-xl p-8 shadow-sm">
+  <div id="empty-state" class="hidden bg-white border border-amber-300 rounded-xl p-6 sm:p-8 shadow-sm">
     <h2 class="text-lg font-bold text-slate-900 mb-2" id="empty-title">No data yet</h2>
     <p class="text-sm text-slate-600 mb-4" id="empty-body"></p>
     <ol class="text-sm text-slate-600 list-decimal ml-5 space-y-1">
@@ -39,88 +65,86 @@
 
   <main id="dashboard" class="hidden">
 
-    <!-- Campaign-outlier control. The single most important context on the page:
-         one giveaway post can carry most of a market's engagement. -->
-    <section id="campaign-panel" class="hidden mb-6 bg-white border-l-4 border-amber-400 rounded-r-xl shadow-sm p-5">
-      <div class="flex flex-wrap gap-4 justify-between items-start">
-        <div class="flex-1 min-w-64">
+    <section id="campaign-panel" class="reveal hidden mb-5 bg-white border-l-4 border-amber-400 rounded-r-xl shadow-sm p-4 sm:p-5">
+      <div class="flex flex-col sm:flex-row gap-4 justify-between sm:items-start">
+        <div class="flex-1 min-w-0">
           <h3 class="font-bold text-slate-900 text-sm">Campaign posts detected</h3>
           <p class="text-xs text-slate-600 mt-1" id="campaign-detail"></p>
           <div id="campaign-list" class="mt-3 space-y-1"></div>
         </div>
-        <div class="shrink-0">
-          <div class="inline-flex rounded-lg border border-slate-300 overflow-hidden text-xs font-semibold">
-            <button id="btn-organic" class="px-4 py-2 transition">Organic baseline</button>
-            <button id="btn-all" class="px-4 py-2 transition border-l border-slate-300">As collected</button>
+        <div class="shrink-0 sm:text-right">
+          <div class="inline-flex w-full sm:w-auto rounded-lg border border-slate-300 overflow-hidden text-xs font-semibold">
+            <button id="btn-organic" class="flex-1 px-3 sm:px-4 py-2 transition">Organic baseline</button>
+            <button id="btn-all" class="flex-1 px-3 sm:px-4 py-2 transition border-l border-slate-300">As collected</button>
           </div>
-          <p class="text-xs text-slate-400 mt-2 max-w-56 text-right" id="mode-note"></p>
+          <p class="text-xs text-slate-400 mt-2 sm:max-w-56" id="mode-note"></p>
         </div>
       </div>
     </section>
 
-    <section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-t-4" style="border-top-color: var(--bbk)">
-        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide">BBK Engagement SoV</h3>
-        <p id="kpi-eng-sov" class="text-4xl font-bold num mt-2" style="color: var(--bbk)">—</p>
-        <p class="text-xs text-slate-400 mt-1">Share of all likes + comments</p>
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
+      <div class="reveal card bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200 border-t-4" style="border-top-color: var(--bbk)">
+        <h3 class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide">BBK Engagement SoV</h3>
+        <p id="kpi-eng-sov" class="text-2xl sm:text-4xl font-bold num mt-2" style="color: var(--bbk)">—</p>
+        <p class="text-[10px] sm:text-xs text-slate-400 mt-1">Share of all likes + comments</p>
       </div>
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide">BBK Audience SoV</h3>
-        <p id="kpi-aud-sov" class="text-4xl font-bold text-slate-800 num mt-2">—</p>
-        <p class="text-xs text-slate-400 mt-1">Share of all followers</p>
+      <div class="reveal card bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide">BBK Audience SoV</h3>
+        <p id="kpi-aud-sov" class="text-2xl sm:text-4xl font-bold text-slate-800 num mt-2">—</p>
+        <p class="text-[10px] sm:text-xs text-slate-400 mt-1">Share of all followers</p>
       </div>
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Performance Index</h3>
-        <p id="kpi-index" class="text-4xl font-bold num mt-2">—</p>
-        <p id="kpi-index-note" class="text-xs text-slate-400 mt-1">Engagement share ÷ audience share</p>
+      <div class="reveal card bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide">Performance Index</h3>
+        <p id="kpi-index" class="text-2xl sm:text-4xl font-bold num mt-2">—</p>
+        <p id="kpi-index-note" class="text-[10px] sm:text-xs text-slate-400 mt-1">Engagement ÷ audience share</p>
       </div>
-      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Engagement Tracked</h3>
-        <p id="kpi-total" class="text-4xl font-bold text-slate-800 num mt-2">—</p>
-        <p id="kpi-total-note" class="text-xs text-slate-400 mt-1"></p>
+      <div class="reveal card bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wide">Engagement Tracked</h3>
+        <p id="kpi-total" class="text-2xl sm:text-4xl font-bold text-slate-800 num mt-2">—</p>
+        <p id="kpi-total-note" class="text-[10px] sm:text-xs text-slate-400 mt-1"></p>
       </div>
     </section>
 
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h3 class="font-bold text-slate-800 mb-1">Engagement Share of Voice</h3>
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-5">
+      <div class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="font-bold text-slate-800 text-sm sm:text-base">Engagement Share of Voice</h3>
         <p class="text-xs text-slate-400 mb-4">Total likes + comments across the tracked window</p>
-        <div class="h-72"><canvas id="chart-sov"></canvas></div>
+        <div class="h-64 sm:h-72"><canvas id="chart-sov"></canvas></div>
       </div>
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h3 class="font-bold text-slate-800 mb-1">Engagement Rate per Follower</h3>
+      <div class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="font-bold text-slate-800 text-sm sm:text-base">Engagement Rate per Follower</h3>
         <p class="text-xs text-slate-400 mb-4">Avg engagement per post ÷ followers. Normalises for account size.</p>
-        <div class="h-72"><canvas id="chart-rate"></canvas></div>
+        <div class="h-64 sm:h-72"><canvas id="chart-rate"></canvas></div>
       </div>
     </section>
 
-    <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
-      <h3 class="font-bold text-slate-800 mb-1">Share of Voice vs Share of Audience</h3>
+    <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
+      <h3 class="font-bold text-slate-800 text-sm sm:text-base">Share of Voice vs Share of Audience</h3>
       <p class="text-xs text-slate-400 mb-4">Bars above the dashed line earn more attention than their size implies.</p>
-      <div class="h-80"><canvas id="chart-gap"></canvas></div>
+      <div class="h-72 sm:h-80"><canvas id="chart-gap"></canvas></div>
     </section>
 
-    <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
-      <h3 class="font-bold text-slate-800 mb-1">What To Do Next</h3>
+    <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
+      <h3 class="font-bold text-slate-800 text-sm sm:text-base">What To Do Next</h3>
       <p class="text-xs text-slate-400 mb-4">Generated from the data above. Each point states the figure it rests on.</p>
       <div id="recommendations" class="space-y-3"></div>
     </section>
 
-    <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
-      <h3 class="font-bold text-slate-800 mb-1">Content Themes</h3>
+    <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
+      <h3 class="font-bold text-slate-800 text-sm sm:text-base">Content Themes</h3>
       <p class="text-xs text-slate-400 mb-4">Posts classified by keyword, Arabic and English. Ten posts per bank is a
         small window — read these as a signal worth testing, not a settled result.</p>
       <div id="theme-callout" class="mb-4"></div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-sm">
+      <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+        <table class="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
-            <tr class="border-b-2 border-slate-200 text-xs font-semibold text-slate-500 uppercase">
-              <th class="py-3 px-3">Theme</th>
-              <th class="py-3 px-3 text-right">BBK posts</th>
-              <th class="py-3 px-3 text-right">BBK avg</th>
-              <th class="py-3 px-3 text-right">vs BBK average</th>
-              <th class="py-3 px-3 text-right">Market posts</th>
-              <th class="py-3 px-3 text-right">Market avg</th>
+            <tr class="border-b-2 border-slate-200 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase">
+              <th class="py-3 px-2 sm:px-3">Theme</th>
+              <th class="py-3 px-2 sm:px-3 text-right">BBK n</th>
+              <th class="py-3 px-2 sm:px-3 text-right">BBK avg</th>
+              <th class="py-3 px-2 sm:px-3 text-right">vs avg</th>
+              <th class="py-3 px-2 sm:px-3 text-right hidden sm:table-cell">Market n</th>
+              <th class="py-3 px-2 sm:px-3 text-right">Market avg</th>
             </tr>
           </thead>
           <tbody id="theme-body" class="text-slate-700"></tbody>
@@ -128,19 +152,19 @@
       </div>
     </section>
 
-    <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
-      <h3 class="font-bold text-slate-800 mb-4">Full Breakdown</h3>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse text-sm">
+    <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
+      <h3 class="font-bold text-slate-800 text-sm sm:text-base mb-4">Full Breakdown</h3>
+      <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+        <table class="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
-            <tr class="border-b-2 border-slate-200 text-xs font-semibold text-slate-500 uppercase">
-              <th class="py-3 px-3">Bank</th>
-              <th class="py-3 px-3 text-right">Followers</th>
-              <th class="py-3 px-3 text-right">Posts</th>
-              <th class="py-3 px-3 text-right">Total Eng.</th>
-              <th class="py-3 px-3 text-right">Avg / Post</th>
-              <th class="py-3 px-3 text-right">Eng. Rate</th>
-              <th class="py-3 px-3 text-right">Eng. SoV</th>
+            <tr class="border-b-2 border-slate-200 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase">
+              <th class="py-3 px-2 sm:px-3">Bank</th>
+              <th class="py-3 px-2 sm:px-3 text-right">Followers</th>
+              <th class="py-3 px-2 sm:px-3 text-right hidden sm:table-cell">Posts</th>
+              <th class="py-3 px-2 sm:px-3 text-right">Total Eng.</th>
+              <th class="py-3 px-2 sm:px-3 text-right hidden sm:table-cell">Avg / Post</th>
+              <th class="py-3 px-2 sm:px-3 text-right hidden md:table-cell">Eng. Rate</th>
+              <th class="py-3 px-2 sm:px-3 text-right">Eng. SoV</th>
             </tr>
           </thead>
           <tbody id="table-body" class="text-slate-700"></tbody>
@@ -148,24 +172,31 @@
       </div>
     </section>
 
-    <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-      <h3 class="font-bold text-slate-800 mb-1">Highest-Engagement Posts in Market</h3>
+    <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
+      <h3 class="font-bold text-slate-800 text-sm sm:text-base">Highest-Engagement Posts in Market</h3>
       <p class="text-xs text-slate-400 mb-4">What is actually working right now, whoever posted it.</p>
       <div id="top-posts" class="space-y-2"></div>
     </section>
 
-    <footer class="text-xs text-slate-400 mt-6 text-center"><span id="footer-note"></span></footer>
+    <footer class="text-xs text-slate-400 mt-6 mb-24 sm:mb-6 text-center px-2"><span id="footer-note"></span></footer>
   </main>
 </div>
+
+<!-- Stays reachable at any scroll position, which is where the request came from. -->
+<button id="btn-export" class="hidden fixed bottom-5 right-4 sm:right-6 z-50 shadow-xl rounded-full
+  px-5 py-3.5 text-sm font-semibold text-white flex items-center gap-2 transition hover:brightness-110 active:scale-95"
+  style="background: var(--bbk)">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>
+  </svg>
+  <span id="btn-export-label">Download PPT</span>
+</button>
 
 <script>
 const SUPABASE_URL = "https://kbcdgleigtjmhzfhkdvp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_JFGvztc25SDhuft7UJMJEg_I2_O4_3M";
 const CLIENT = "BBK";
 
-// A post earning more than this multiple of its own account's median is a
-// campaign spike, not typical output. Giveaways ("comment to win") routinely
-// land 100x a normal post and would otherwise decide the entire ranking.
 const OUTLIER_MULTIPLE = 5;
 
 // Keyword themes, checked in order — first match wins. Reward comes first
@@ -209,16 +240,41 @@ const $ = (id) => document.getElementById(id);
 const show = (id) => $(id).classList.remove("hidden");
 const hide = (id) => $(id).classList.add("hidden");
 
-let ALL_POSTS = [], PROFILES = [], CHARTS = [], organicOnly = true;
+const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let ALL_POSTS = [], PROFILES = [], CHARTS = [], organicOnly = true, LAST = null;
+
+/** Counts a figure up from zero. Skipped entirely under reduced-motion. */
+function countUp(el, to, fmt, ms = 850) {
+  if (REDUCED || !isFinite(to)) { el.textContent = fmt(to); return; }
+  const t0 = performance.now();
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / ms);
+    el.textContent = fmt(to * (1 - Math.pow(1 - k, 3)));  // ease-out cubic
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (!e.isIntersecting) return;
+    e.target.style.transitionDelay = Math.min(i * 60, 240) + "ms";
+    e.target.classList.add("in");
+    revealObserver.unobserve(e.target);
+  });
+}, { rootMargin: "0px 0px -40px 0px", threshold: 0.05 });
+
+function armReveals() {
+  document.querySelectorAll(".reveal:not(.in)").forEach((el) => revealObserver.observe(el));
+}
 
 function setStatus(text, tone, detail) {
-  const tones = {
-    live: "bg-emerald-50 text-emerald-700",
-    warn: "bg-amber-50 text-amber-700",
-    error: "bg-red-50 text-red-700",
-  };
-  $("status-pill").className = "inline-block px-3 py-1 rounded-full text-xs font-semibold " + (tones[tone] || tones.warn);
-  $("status-pill").textContent = text;
+  const tones = { live: "bg-emerald-500/20 text-emerald-300", warn: "bg-amber-500/20 text-amber-200", error: "bg-red-500/20 text-red-200" };
+  const dots = { live: "bg-emerald-400", warn: "bg-amber-300", error: "bg-red-400" };
+  $("status-pill").className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold " + (tones[tone] || tones.warn);
+  $("status-pill").querySelector("span").className = "live-dot w-2 h-2 rounded-full " + (dots[tone] || dots.warn);
+  $("status-text").textContent = text;
   $("status-detail").textContent = detail || "";
 }
 
@@ -229,20 +285,16 @@ function failTo(title, body) {
   hide("dashboard");
 }
 
-/** Median engagement per account, used as each account's own baseline. */
 function flagOutliers(posts) {
   const byHandle = {};
   for (const p of posts) (byHandle[p.bank_handle] ||= []).push(p);
-
   const medians = {};
   for (const h in byHandle) {
     const s = byHandle[h].map(engOf).sort((a, b) => a - b);
     const mid = s.length >> 1;
     medians[h] = s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
   }
-  for (const p of posts) {
-    p._outlier = engOf(p) > OUTLIER_MULTIPLE * Math.max(medians[p.bank_handle] || 0, 1);
-  }
+  for (const p of posts) p._outlier = engOf(p) > OUTLIER_MULTIPLE * Math.max(medians[p.bank_handle] || 0, 1);
   return posts.filter((p) => p._outlier);
 }
 
@@ -255,9 +307,7 @@ function aggregate(posts, profiles) {
   for (const p of posts) {
     const handle = p.bank_handle;
     if (!handle) continue;
-    if (!byBank.has(handle)) {
-      byBank.set(handle, { bank: p.bank_name, handle, posts: 0, engagement: 0, followers: 0, reels: 0 });
-    }
+    if (!byBank.has(handle)) byBank.set(handle, { bank: p.bank_name, handle, posts: 0, engagement: 0, followers: 0, reels: 0 });
     const row = byBank.get(handle);
     row.posts += 1;
     row.engagement += engOf(p);
@@ -291,7 +341,7 @@ const colourFor = (row, i) => (row.bank === CLIENT ? BBK_RED : PALETTE[i % PALET
 
 function renderKpis({ rows, totalEng }, postCount) {
   const bbk = rows.find((r) => r.bank === CLIENT);
-  $("kpi-total").textContent = nf.format(totalEng);
+  countUp($("kpi-total"), totalEng, (v) => nf.format(Math.round(v)));
   $("kpi-total-note").textContent = `across ${nf.format(postCount)} posts · ${rows.length} banks`;
 
   if (!bbk) {
@@ -300,13 +350,14 @@ function renderKpis({ rows, totalEng }, postCount) {
     return;
   }
 
-  $("kpi-eng-sov").textContent = pct(bbk.engSoV);
-  $("kpi-aud-sov").textContent = bbk.audSoV === null ? "n/a" : pct(bbk.audSoV);
+  countUp($("kpi-eng-sov"), bbk.engSoV, (v) => pct(v));
+  if (bbk.audSoV === null) $("kpi-aud-sov").textContent = "n/a";
+  else countUp($("kpi-aud-sov"), bbk.audSoV, (v) => pct(v));
 
   if (bbk.audSoV) {
     const index = bbk.engSoV / bbk.audSoV;
-    $("kpi-index").textContent = index.toFixed(2) + "×";
-    $("kpi-index").className = "text-4xl font-bold num mt-2 " + (index >= 1 ? "text-emerald-600" : "text-red-600");
+    $("kpi-index").className = "text-2xl sm:text-4xl font-bold num mt-2 " + (index >= 1 ? "text-emerald-600" : "text-red-600");
+    countUp($("kpi-index"), index, (v) => v.toFixed(2) + "×");
     $("kpi-index-note").textContent = index >= 1 ? "Punching above its audience size" : "Under-earning relative to its size";
   } else {
     $("kpi-index").textContent = "n/a";
@@ -317,17 +368,17 @@ function renderKpis({ rows, totalEng }, postCount) {
 function renderCharts({ rows }) {
   CHARTS.forEach((c) => c.destroy());
   CHARTS = [];
-
+  const anim = REDUCED ? false : { duration: 900, easing: "easeOutQuart" };
   const labels = rows.map((r) => r.bank);
   const colours = rows.map(colourFor);
 
   CHARTS.push(new Chart($("chart-sov"), {
     type: "doughnut",
-    data: { labels, datasets: [{ data: rows.map((r) => r.engagement), backgroundColor: colours, borderWidth: 2, borderColor: "#fff" }] },
+    data: { labels, datasets: [{ data: rows.map((r) => r.engagement), backgroundColor: colours, borderWidth: 2, borderColor: "#fff", hoverOffset: 10 }] },
     options: {
-      maintainAspectRatio: false,
+      maintainAspectRatio: false, animation: anim,
       plugins: {
-        legend: { position: "right", labels: { boxWidth: 12, font: { size: 11 } } },
+        legend: { position: window.innerWidth < 640 ? "bottom" : "right", labels: { boxWidth: 12, font: { size: 11 }, padding: 10 } },
         tooltip: { callbacks: { label: (c) => `${c.label}: ${nf.format(c.raw)} (${pct(rows[c.dataIndex].engSoV)})` } },
       },
     },
@@ -336,11 +387,11 @@ function renderCharts({ rows }) {
   const rated = rows.filter((r) => r.engRate !== null).sort((a, b) => b.engRate - a.engRate);
   CHARTS.push(new Chart($("chart-rate"), {
     type: "bar",
-    data: { labels: rated.map((r) => r.bank), datasets: [{ data: rated.map((r) => r.engRate * 100), backgroundColor: rated.map(colourFor) }] },
+    data: { labels: rated.map((r) => r.bank), datasets: [{ data: rated.map((r) => r.engRate * 100), backgroundColor: rated.map(colourFor), borderRadius: 6 }] },
     options: {
-      maintainAspectRatio: false,
+      maintainAspectRatio: false, animation: anim,
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.raw.toFixed(3) + "% of followers engage per post" } } },
-      scales: { y: { beginAtZero: true, ticks: { callback: (v) => v.toFixed(2) + "%" } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: (v) => v.toFixed(2) + "%" } }, x: { ticks: { font: { size: 10 } } } },
     },
   }));
 
@@ -349,14 +400,14 @@ function renderCharts({ rows }) {
     data: {
       labels,
       datasets: [
-        { label: "Engagement SoV", data: rows.map((r) => r.engSoV * 100), backgroundColor: colours },
+        { label: "Engagement SoV", data: rows.map((r) => r.engSoV * 100), backgroundColor: colours, borderRadius: 6 },
         { label: "Audience SoV", data: rows.map((r) => (r.audSoV || 0) * 100), type: "line", borderColor: "#475569", backgroundColor: "#475569", borderDash: [6, 4], pointRadius: 4, fill: false },
       ],
     },
     options: {
-      maintainAspectRatio: false,
+      maintainAspectRatio: false, animation: anim,
       plugins: { tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.raw.toFixed(1)}%` } } },
-      scales: { y: { beginAtZero: true, ticks: { callback: (v) => v + "%" } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: (v) => v + "%" } }, x: { ticks: { font: { size: 10 } } } },
     },
   }));
 }
@@ -365,44 +416,81 @@ function renderTable({ rows }) {
   $("table-body").innerHTML = rows.map((r) => {
     const isClient = r.bank === CLIENT;
     return `<tr class="border-b border-slate-100 ${isClient ? "bg-red-50 font-semibold" : ""}">
-      <td class="py-3 px-3">
-        <span class="inline-block w-2 h-2 rounded-full mr-2" style="background:${isClient ? BBK_RED : "#94a3b8"}"></span>
-        ${esc(r.bank)}<span class="text-slate-400 font-normal text-xs ml-1">@${esc(r.handle)}</span>
+      <td class="py-3 px-2 sm:px-3">
+        <span class="inline-block w-2 h-2 rounded-full mr-2 align-middle" style="background:${isClient ? BBK_RED : "#94a3b8"}"></span>
+        ${esc(r.bank)}<span class="text-slate-400 font-normal text-[10px] sm:text-xs ml-1 hidden sm:inline">@${esc(r.handle)}</span>
       </td>
-      <td class="py-3 px-3 text-right num">${r.followers ? nf.format(r.followers) : "<span class='text-slate-300'>—</span>"}</td>
-      <td class="py-3 px-3 text-right num">${nf.format(r.posts)}</td>
-      <td class="py-3 px-3 text-right num">${nf.format(r.engagement)}</td>
-      <td class="py-3 px-3 text-right num">${nf.format(Math.round(r.avgPerPost))}</td>
-      <td class="py-3 px-3 text-right num">${r.engRate === null ? "<span class='text-slate-300'>—</span>" : (r.engRate * 100).toFixed(3) + "%"}</td>
-      <td class="py-3 px-3 text-right num">${pct(r.engSoV)}</td>
+      <td class="py-3 px-2 sm:px-3 text-right num">${r.followers ? nf.format(r.followers) : "<span class='text-slate-300'>—</span>"}</td>
+      <td class="py-3 px-2 sm:px-3 text-right num hidden sm:table-cell">${nf.format(r.posts)}</td>
+      <td class="py-3 px-2 sm:px-3 text-right num">${nf.format(r.engagement)}</td>
+      <td class="py-3 px-2 sm:px-3 text-right num hidden sm:table-cell">${nf.format(Math.round(r.avgPerPost))}</td>
+      <td class="py-3 px-2 sm:px-3 text-right num hidden md:table-cell">${r.engRate === null ? "—" : (r.engRate * 100).toFixed(3) + "%"}</td>
+      <td class="py-3 px-2 sm:px-3 text-right num">${pct(r.engSoV)}</td>
     </tr>`;
   }).join("");
 }
 
-function renderTopPosts(posts) {
-  const top = [...posts].sort((a, b) => engOf(b) - engOf(a)).slice(0, 5);
-  $("top-posts").innerHTML = top.map((p, i) => `
-    <div class="flex gap-3 items-start p-3 rounded-lg border border-slate-100 ${p.bank_name === CLIENT ? "bg-red-50" : "bg-slate-50"}">
-      <span class="text-slate-300 font-bold text-lg num">${i + 1}</span>
-      <div class="flex-1 min-w-0">
-        <div class="flex justify-between gap-3">
-          <span class="font-semibold text-sm">${esc(p.bank_name)}
-            ${p._outlier ? '<span class="ml-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">CAMPAIGN</span>' : ""}
-          </span>
-          <span class="text-sm font-bold num whitespace-nowrap">${nf.format(engOf(p))} eng.</span>
-        </div>
-        <!-- dir="auto" so Arabic captions lay out RTL and Latin ones LTR,
-             decided per string by the browser rather than assumed. -->
-        <p dir="auto" class="text-xs text-slate-500 mt-1">${esc((p.caption || "").slice(0, 150)) || "<em>no caption</em>"}</p>
-        <div class="flex gap-3 mt-1">
-          <span class="text-xs text-slate-400 num">${nf.format(p.likes_count || 0)} likes · ${nf.format(p.comments_count || 0)} comments</span>
-          <a href="${esc(p.post_url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 hover:underline">View →</a>
-        </div>
-      </div>
-    </div>`).join("");
+function themeRows(posts) {
+  const mean = (list) => (list.length ? list.reduce((a, p) => a + engOf(p), 0) / list.length : null);
+  const clientPosts = posts.filter((p) => p.bank_name === CLIENT);
+  const clientAvg = mean(clientPosts);
+  const rows = [...THEMES, OTHER].map((theme) => {
+    const inTheme = (list) => list.filter((p) => classify(p) === theme.key);
+    const c = inTheme(clientPosts), m = inTheme(posts);
+    return {
+      label: theme.label, cN: c.length, cAvg: mean(c), mN: m.length, mAvg: mean(m),
+      // Against BBK's own average, so the question is "does this theme beat
+      // their normal output", not "does BBK beat the market".
+      index: clientAvg && mean(c) ? mean(c) / clientAvg : null,
+    };
+  }).filter((r) => r.mN > 0);
+  return { rows, clientAvg, clientN: clientPosts.length };
 }
 
-function renderRecommendations({ rows }, posts, campaigns) {
+function renderThemes(posts) {
+  const { rows, clientAvg, clientN } = themeRows(posts);
+
+  $("theme-body").innerHTML = rows.map((r) => {
+    const strong = r.index !== null && r.index >= 1.2 && r.cN >= 2;
+    const weak = r.index !== null && r.index < 0.8 && r.cN >= 2;
+    const idx = r.index === null ? "<span class='text-slate-300'>—</span>"
+      : `<span class="${strong ? "text-emerald-600 font-bold" : weak ? "text-red-600" : "text-slate-500"}">${r.index.toFixed(2)}×</span>`;
+    return `<tr class="border-b border-slate-100 ${strong ? "bg-emerald-50" : ""}">
+      <td class="py-3 px-2 sm:px-3 font-medium">${esc(r.label)}</td>
+      <td class="py-3 px-2 sm:px-3 text-right num">${r.cN || "<span class='text-slate-300'>0</span>"}</td>
+      <td class="py-3 px-2 sm:px-3 text-right num">${r.cAvg === null ? "<span class='text-slate-300'>—</span>" : nf.format(Math.round(r.cAvg))}</td>
+      <td class="py-3 px-2 sm:px-3 text-right num">${idx}</td>
+      <td class="py-3 px-2 sm:px-3 text-right num hidden sm:table-cell">${r.mN}</td>
+      <td class="py-3 px-2 sm:px-3 text-right num">${r.mAvg === null ? "—" : nf.format(Math.round(r.mAvg))}</td>
+    </tr>`;
+  }).join("");
+
+  // Only call a winner at n>=2. One post above average is noise, and on this
+  // dataset that distinction reverses the conclusion.
+  const best = rows.filter((r) => r.cN >= 2 && r.index !== null && r.index >= 1.2).sort((a, b) => b.index - a.index)[0];
+  const thin = rows.filter((r) => r.cN === 1 && r.index !== null && r.index >= 1.2);
+
+  let html = "";
+  if (best) {
+    html = `<div class="border-l-4 border-emerald-400 bg-emerald-50 p-4 rounded-r-lg">
+      <h4 class="font-bold text-sm text-slate-900">${CLIENT}'s strongest theme: ${esc(best.label)}</h4>
+      <p class="text-sm text-slate-600 mt-1">These posts average ${nf.format(Math.round(best.cAvg))} interactions against
+      ${CLIENT}'s overall ${nf.format(Math.round(clientAvg))} — ${best.index.toFixed(1)}× their normal output, across
+      ${best.cN} posts. ${CLIENT} already knows what this audience responds to; the gap is how often it runs.</p></div>`;
+  } else if (thin.length) {
+    html = `<div class="border-l-4 border-amber-400 bg-amber-50 p-4 rounded-r-lg">
+      <h4 class="font-bold text-sm text-slate-900">Possible signal: ${esc(thin[0].label)}</h4>
+      <p class="text-sm text-slate-600 mt-1">${CLIENT}'s single post in this theme earned
+      ${nf.format(Math.round(thin[0].cAvg))} against an average of ${nf.format(Math.round(clientAvg))} —
+      ${thin[0].index.toFixed(1)}×. That is one post, not a pattern. Worth widening the window before acting on it.</p></div>`;
+  } else if (clientN) {
+    html = `<div class="border-l-4 border-slate-300 bg-slate-50 p-4 rounded-r-lg">
+      <p class="text-sm text-slate-600">No theme clears ${CLIENT}'s own average by a meaningful margin in this window.</p></div>`;
+  }
+  $("theme-callout").innerHTML = html;
+}
+
+function recommendations({ rows }, posts, campaigns) {
   const bbk = rows.find((r) => r.bank === CLIENT);
   const out = [];
   const add = (tone, title, body) => out.push({ tone, title, body });
@@ -411,22 +499,22 @@ function renderRecommendations({ rows }, posts, campaigns) {
   if (campaigns.length && organicOnly) {
     const c = campaigns[0];
     add("blue", "Figures exclude a competition post",
-      `${esc(c.bank_name)} ran a giveaway earning ${nf.format(engOf(c))} interactions — ${nf.format(c.comments_count || 0)} of them comments. Left in, it alone would take most of the market's engagement and make every other comparison meaningless. These figures show typical output instead. Switch to "As collected" to see the raw picture.`);
-  } else if (campaigns.length && !organicOnly) {
+      `${c.bank_name} ran a giveaway earning ${nf.format(engOf(c))} interactions — ${nf.format(c.comments_count || 0)} of them comments. Left in, it alone would take most of the market's engagement and make every other comparison meaningless. These figures show typical output instead.`);
+  } else if (campaigns.length) {
     add("amber", "A single competition dominates these figures",
-      `${esc(campaigns[0].bank_name)}'s giveaway accounts for ${pct(engOf(campaigns[0]) / rows.reduce((a, r) => a + r.engagement, 0))} of all tracked engagement. Treat this view as evidence of what a competition can do, not as a read on sustained performance.`);
+      `${campaigns[0].bank_name}'s giveaway accounts for ${pct(engOf(campaigns[0]) / rows.reduce((a, r) => a + r.engagement, 0))} of all tracked engagement. Treat this as evidence of what a competition can do, not a read on sustained performance.`);
   }
 
   if (!bbk) {
     add("red", `No ${CLIENT} data`, `Nothing was collected for ${CLIENT}. Verify the handle in scraper.py before reading anything else here.`);
   } else {
-    const leader = rows[0];
+    const leader = rows[0], pos = rows.indexOf(bbk);
     if (leader.bank !== CLIENT) {
-      add("red", `${esc(leader.bank)} leads engagement share`,
-        `${esc(leader.bank)} holds ${pct(leader.engSoV)} against ${CLIENT}'s ${pct(bbk.engSoV)} — a gap of ${pct(leader.engSoV - bbk.engSoV)}. ${CLIENT} sits ${rows.indexOf(bbk) + 1}${["st","nd","rd"][rows.indexOf(bbk)] || "th"} of ${rows.length}.`);
+      add("red", `${leader.bank} leads engagement share`,
+        `${leader.bank} holds ${pct(leader.engSoV)} against ${CLIENT}'s ${pct(bbk.engSoV)} — a gap of ${pct(leader.engSoV - bbk.engSoV)}. ${CLIENT} sits ${pos + 1}${["st", "nd", "rd"][pos] || "th"} of ${rows.length}.`);
     } else {
       add("green", `${CLIENT} leads engagement share`,
-        `${CLIENT} holds ${pct(bbk.engSoV)} of all engagement, ahead of ${esc(rows[1]?.bank || "the field")}. The task is defending it, not chasing.`);
+        `${CLIENT} holds ${pct(bbk.engSoV)} of all engagement, ahead of ${rows[1]?.bank || "the field"}. The task is defending it, not chasing.`);
     }
 
     if (bbk.audSoV) {
@@ -436,7 +524,7 @@ function renderRecommendations({ rows }, posts, campaigns) {
           `${CLIENT} holds ${pct(bbk.audSoV)} of followers but earns only ${pct(bbk.engSoV)} of engagement — an index of ${index.toFixed(2)}×. The reach already exists and is not converting. That is a creative problem, not a media-spend problem.`);
       } else if (index > 1.1) {
         add("green", "Content out-performs audience size",
-          `${CLIENT} earns ${pct(bbk.engSoV)} of engagement from ${pct(bbk.audSoV)} of followers — an index of ${index.toFixed(2)}×. The creative works; reach is the constraint. Growth spend is justified.`);
+          `${CLIENT} earns ${pct(bbk.engSoV)} of engagement from ${pct(bbk.audSoV)} of followers — an index of ${index.toFixed(2)}×. The creative works; reach is the constraint.`);
       }
     }
 
@@ -444,8 +532,22 @@ function renderRecommendations({ rows }, posts, campaigns) {
     const best = rated[0];
     if (best && bbk.engRate !== null && best.bank !== CLIENT) {
       const mult = bbk.engRate > 0 ? best.engRate / bbk.engRate : null;
-      add("amber", `${esc(best.bank)} has the strongest engagement rate`,
+      add("amber", `${best.bank} has the strongest engagement rate`,
         `${(best.engRate * 100).toFixed(3)}% per follower against ${CLIENT}'s ${(bbk.engRate * 100).toFixed(3)}%${mult ? ` — ${mult.toFixed(1)}× stronger` : ""}. Audit their recent posts for format and hook before the next content sprint.`);
+    }
+
+    // Theme comparison against the market, which is where the sharper finding
+    // sits: BBK's most-used theme is also the one it runs below market standard.
+    const { rows: tRows } = themeRows(posts);
+    const heavy = tRows.filter((r) => r.cN >= 2).sort((a, b) => b.cN - a.cN)[0];
+    if (heavy && heavy.mAvg && heavy.cAvg < heavy.mAvg * 0.9) {
+      add("red", `${CLIENT}'s most-used theme runs below market standard`,
+        `${heavy.cN} of ${CLIENT}'s posts are ${heavy.label.toLowerCase()}, averaging ${nf.format(Math.round(heavy.cAvg))} against the market's ${nf.format(Math.round(heavy.mAvg))} on the same theme. The format is not the problem — the execution is.`);
+    }
+    const under = tRows.filter((r) => r.cN <= 1 && r.mAvg && r.mN >= 4).sort((a, b) => b.mAvg - a.mAvg)[0];
+    if (under) {
+      add("blue", `Under-used and out-performing: ${under.label}`,
+        `This theme averages ${nf.format(Math.round(under.mAvg))} across ${under.mN} posts market-wide — the strongest of any theme — yet ${CLIENT} ran ${under.cN === 0 ? "none" : "one"} in this window. A hypothesis worth testing, not a settled finding: the sample is small.`);
     }
 
     const marketReel = rows.reduce((a, r) => a + r.reels, 0) / Math.max(1, rows.reduce((a, r) => a + r.posts, 0));
@@ -453,118 +555,220 @@ function renderRecommendations({ rows }, posts, campaigns) {
       add("amber", "Under-indexed on video",
         `${pct(bbk.reelShare)} of ${CLIENT}'s tracked posts are video against a market average of ${pct(marketReel)}. Video is the format Instagram's ranking currently favours, and shifting the mix is the cheapest lever available.`);
     }
-
-    if (campaigns.length && !campaigns.some((c) => c.bank_name === CLIENT)) {
-      add("blue", "Competitors are buying engagement with giveaways",
-        `${esc(campaigns[0].bank_name)} used a prize competition to earn ${nf.format(engOf(campaigns[0]))} interactions in one post. ${CLIENT} ran nothing comparable in this window. It is a legitimate tactic with a real caveat: entrants follow for the prize, and the audience it builds is not necessarily a banking audience.`);
-    }
   }
+  return out;
+}
 
+function renderRecommendations(agg, posts, campaigns) {
   const tones = {
     red: "border-red-400 bg-red-50", amber: "border-amber-400 bg-amber-50",
     green: "border-emerald-400 bg-emerald-50", blue: "border-blue-400 bg-blue-50",
   };
-  $("recommendations").innerHTML = out.map((r) => `
+  $("recommendations").innerHTML = recommendations(agg, posts, campaigns).map((r) => `
     <div class="border-l-4 ${tones[r.tone]} p-4 rounded-r-lg">
-      <h4 class="font-bold text-sm text-slate-900">${r.title}</h4>
-      <p class="text-sm text-slate-600 mt-1">${r.body}</p>
+      <h4 class="font-bold text-sm text-slate-900">${esc(r.title)}</h4>
+      <p class="text-sm text-slate-600 mt-1">${esc(r.body)}</p>
+    </div>`).join("");
+}
+
+function renderTopPosts(posts) {
+  const top = [...posts].sort((a, b) => engOf(b) - engOf(a)).slice(0, 5);
+  $("top-posts").innerHTML = top.map((p, i) => `
+    <div class="flex gap-3 items-start p-3 rounded-lg border border-slate-100 ${p.bank_name === CLIENT ? "bg-red-50" : "bg-slate-50"}">
+      <span class="text-slate-300 font-bold text-lg num">${i + 1}</span>
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap justify-between gap-2">
+          <span class="font-semibold text-sm">${esc(p.bank_name)}
+            ${p._outlier ? '<span class="ml-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">CAMPAIGN</span>' : ""}
+          </span>
+          <span class="text-sm font-bold num whitespace-nowrap">${nf.format(engOf(p))} eng.</span>
+        </div>
+        <!-- dir="auto" so Arabic captions lay out RTL and Latin ones LTR,
+             decided per string by the browser rather than assumed. -->
+        <p dir="auto" class="text-xs text-slate-500 mt-1">${esc((p.caption || "").slice(0, 150)) || "<em>no caption</em>"}</p>
+        <div class="flex flex-wrap gap-3 mt-1">
+          <span class="text-xs text-slate-400 num">${nf.format(p.likes_count || 0)} likes · ${nf.format(p.comments_count || 0)} comments</span>
+          <a href="${esc(p.post_url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 hover:underline">View →</a>
+        </div>
+      </div>
     </div>`).join("");
 }
 
 function renderCampaignPanel(campaigns) {
   if (!campaigns.length) { hide("campaign-panel"); return; }
   show("campaign-panel");
-
   const totalAll = ALL_POSTS.reduce((a, p) => a + engOf(p), 0);
   $("campaign-detail").textContent =
     `${campaigns.length} post${campaigns.length > 1 ? "s" : ""} earned more than ${OUTLIER_MULTIPLE}× the posting account's own median — the signature of a prize competition rather than normal output.`;
-
-  $("campaign-list").innerHTML = campaigns
-    .sort((a, b) => engOf(b) - engOf(a))
-    .map((c) => `<div class="text-xs text-slate-600">
-        <span class="font-semibold">${esc(c.bank_name)}</span> ·
-        <span class="num">${nf.format(engOf(c))}</span> interactions
-        (<span class="num">${nf.format(c.comments_count || 0)}</span> comments) ·
-        <span class="num">${pct(engOf(c) / totalAll)}</span> of all tracked engagement
-      </div>`).join("");
+  $("campaign-list").innerHTML = campaigns.sort((a, b) => engOf(b) - engOf(a)).map((c) => `
+    <div class="text-xs text-slate-600"><span class="font-semibold">${esc(c.bank_name)}</span> ·
+      <span class="num">${nf.format(engOf(c))}</span> interactions
+      (<span class="num">${nf.format(c.comments_count || 0)}</span> comments) ·
+      <span class="num">${pct(engOf(c) / totalAll)}</span> of all tracked engagement</div>`).join("");
 
   const on = "bg-slate-800 text-white", off = "bg-white text-slate-600 hover:bg-slate-50";
-  $("btn-organic").className = "px-4 py-2 transition " + (organicOnly ? on : off);
-  $("btn-all").className = "px-4 py-2 transition border-l border-slate-300 " + (organicOnly ? off : on);
-  $("mode-note").textContent = organicOnly
-    ? "Campaign posts excluded — typical output"
-    : "Everything included — one giveaway dominates";
+  $("btn-organic").className = "flex-1 px-3 sm:px-4 py-2 transition " + (organicOnly ? on : off);
+  $("btn-all").className = "flex-1 px-3 sm:px-4 py-2 transition border-l border-slate-300 " + (organicOnly ? off : on);
+  $("mode-note").textContent = organicOnly ? "Campaign posts excluded — typical output" : "Everything included — one giveaway dominates";
 }
 
-function renderThemes(posts) {
-  const mean = (list) => (list.length ? list.reduce((a, p) => a + engOf(p), 0) / list.length : null);
-  const clientPosts = posts.filter((p) => p.bank_name === CLIENT);
-  const clientAvg = mean(clientPosts);
+// ---------------------------------------------------------------------------
+// PowerPoint export
+// ---------------------------------------------------------------------------
 
-  const rows = [...THEMES, OTHER].map((theme) => {
-    const inTheme = (list) => list.filter((p) => classify(p) === theme.key);
-    const c = inTheme(clientPosts), m = inTheme(posts);
-    return {
-      label: theme.label,
-      cN: c.length, cAvg: mean(c),
-      mN: m.length, mAvg: mean(m),
-      // Against BBK's own average, so the question is "does this theme beat
-      // their normal output", not "does BBK beat the market".
-      index: clientAvg && mean(c) ? mean(c) / clientAvg : null,
+const PPT_DARK = "0F172A", PPT_GREY = "64748B", PPT_RED = "C8102E";
+
+function chartImage(i) {
+  // Chart.js renders on a transparent canvas; slides are white, so a flattened
+  // white background avoids dark artefacts in PowerPoint's own rendering.
+  const src = CHARTS[i];
+  if (!src) return null;
+  const c = src.canvas, out = document.createElement("canvas");
+  out.width = c.width; out.height = c.height;
+  const ctx = out.getContext("2d");
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(c, 0, 0);
+  return out.toDataURL("image/png").replace(/^data:/, "");
+}
+
+async function exportPptx() {
+  const btn = $("btn-export"), label = $("btn-export-label");
+  btn.disabled = true; label.textContent = "Building…";
+  try {
+    const { rows } = LAST.agg;
+    const bbk = rows.find((r) => r.bank === CLIENT);
+    const pptx = new PptxGenJS();
+    pptx.layout = "LAYOUT_16x9";
+    pptx.title = "BBK Competitor Intelligence";
+
+    const stamp = new Date().toLocaleDateString("en-GB", { timeZone: "Asia/Bahrain", day: "numeric", month: "short", year: "numeric" });
+    const modeLine = organicOnly
+      ? "Organic baseline — campaign posts excluded"
+      : "As collected — includes campaign posts";
+
+    const titled = (text) => {
+      const s = pptx.addSlide();
+      s.addText(text, { x: 0.5, y: 0.35, w: 9, h: 0.5, fontSize: 22, bold: true, color: PPT_DARK });
+      return s;
     };
-  }).filter((r) => r.mN > 0);
 
-  $("theme-body").innerHTML = rows.map((r) => {
-    const strong = r.index !== null && r.index >= 1.2 && r.cN >= 2;
-    const weak = r.index !== null && r.index < 0.8 && r.cN >= 2;
-    const idx = r.index === null
-      ? "<span class='text-slate-300'>—</span>"
-      : `<span class="${strong ? "text-emerald-600 font-bold" : weak ? "text-red-600" : "text-slate-500"}">${r.index.toFixed(2)}×</span>`;
-    return `<tr class="border-b border-slate-100 ${strong ? "bg-emerald-50" : ""}">
-      <td class="py-3 px-3 font-medium">${esc(r.label)}</td>
-      <td class="py-3 px-3 text-right num">${r.cN || "<span class='text-slate-300'>0</span>"}</td>
-      <td class="py-3 px-3 text-right num">${r.cAvg === null ? "<span class='text-slate-300'>—</span>" : nf.format(Math.round(r.cAvg))}</td>
-      <td class="py-3 px-3 text-right num">${idx}</td>
-      <td class="py-3 px-3 text-right num">${r.mN}</td>
-      <td class="py-3 px-3 text-right num">${r.mAvg === null ? "—" : nf.format(Math.round(r.mAvg))}</td>
-    </tr>`;
-  }).join("");
+    // 1 — cover
+    const cover = pptx.addSlide();
+    cover.background = { color: PPT_DARK };
+    cover.addText("BBK Competitor Intelligence", { x: 0.6, y: 1.9, w: 8.8, h: 0.9, fontSize: 40, bold: true, color: "FFFFFF" });
+    cover.addText("Instagram share of voice · Bahrain retail banking", { x: 0.6, y: 2.8, w: 8.8, h: 0.4, fontSize: 16, color: "94A3B8" });
+    cover.addText(`${stamp}  ·  ${modeLine}`, { x: 0.6, y: 4.5, w: 8.8, h: 0.3, fontSize: 11, color: "64748B" });
 
-  // Only call a winner when BBK has at least two posts in the theme. One post
-  // above average is noise, and presenting it as a finding would be wrong.
-  const best = rows
-    .filter((r) => r.cN >= 2 && r.index !== null && r.index >= 1.2)
-    .sort((a, b) => b.index - a.index)[0];
+    // 2 — headline numbers
+    const kpi = titled("Headline");
+    const cards = [
+      ["BBK Engagement SoV", bbk ? pct(bbk.engSoV) : "n/a", "Share of all likes + comments"],
+      ["BBK Audience SoV", bbk && bbk.audSoV !== null ? pct(bbk.audSoV) : "n/a", "Share of all followers"],
+      ["Performance Index", bbk && bbk.audSoV ? (bbk.engSoV / bbk.audSoV).toFixed(2) + "x" : "n/a", "Engagement share / audience share"],
+      ["Engagement Tracked", nf.format(LAST.agg.totalEng), `${LAST.posts.length} posts · ${rows.length} banks`],
+    ];
+    cards.forEach(([h, v, sub], i) => {
+      const x = 0.5 + i * 2.3;
+      kpi.addText(h.toUpperCase(), { x, y: 1.5, w: 2.1, h: 0.3, fontSize: 9, bold: true, color: PPT_GREY });
+      kpi.addText(v, { x, y: 1.8, w: 2.1, h: 0.7, fontSize: 28, bold: true, color: i === 0 ? PPT_RED : PPT_DARK });
+      kpi.addText(sub, { x, y: 2.5, w: 2.1, h: 0.5, fontSize: 8, color: PPT_GREY });
+    });
+    if (LAST.campaigns.length && organicOnly) {
+      const c = LAST.campaigns[0];
+      kpi.addText(
+        `Excludes a ${c.bank_name} competition post: ${nf.format(engOf(c))} interactions, ${nf.format(c.comments_count || 0)} of them comments — ${pct(engOf(c) / ALL_POSTS.reduce((a, p) => a + engOf(p), 0))} of all tracked engagement on its own.`,
+        { x: 0.5, y: 3.5, w: 9, h: 0.8, fontSize: 11, color: PPT_GREY, italic: true });
+    }
 
-  const thin = rows.filter((r) => r.cN === 1 && r.index !== null && r.index >= 1.2);
+    // 3-5 — charts
+    const charts = [
+      ["Engagement Share of Voice", 0],
+      ["Engagement Rate per Follower", 1],
+      ["Share of Voice vs Share of Audience", 2],
+    ];
+    for (const [heading, idx] of charts) {
+      const img = chartImage(idx);
+      if (!img) continue;
+      const s = titled(heading);
+      s.addImage({ data: img, x: 1.2, y: 1.0, w: 7.6, h: 4.2, sizing: { type: "contain", w: 7.6, h: 4.2 } });
+    }
 
-  let html = "";
-  if (best) {
-    html = `<div class="border-l-4 border-emerald-400 bg-emerald-50 p-4 rounded-r-lg">
-      <h4 class="font-bold text-sm text-slate-900">${CLIENT}'s strongest theme: ${esc(best.label)}</h4>
-      <p class="text-sm text-slate-600 mt-1">These posts average ${nf.format(Math.round(best.cAvg))} interactions against
-      ${CLIENT}'s overall ${nf.format(Math.round(clientAvg))} — ${best.index.toFixed(1)}× their normal output, across
-      ${best.cN} posts. ${CLIENT} already knows what this audience responds to; the gap is how often it runs.</p>
-    </div>`;
-  } else if (thin.length) {
-    html = `<div class="border-l-4 border-amber-400 bg-amber-50 p-4 rounded-r-lg">
-      <h4 class="font-bold text-sm text-slate-900">Possible signal: ${esc(thin[0].label)}</h4>
-      <p class="text-sm text-slate-600 mt-1">${CLIENT}'s single post in this theme earned
-      ${nf.format(Math.round(thin[0].cAvg))} against an average of ${nf.format(Math.round(clientAvg))} —
-      ${thin[0].index.toFixed(1)}×. That is one post, not a pattern. Worth widening the window before acting on it.</p>
-    </div>`;
-  } else if (clientPosts.length) {
-    html = `<div class="border-l-4 border-slate-300 bg-slate-50 p-4 rounded-r-lg">
-      <p class="text-sm text-slate-600">No theme clears ${CLIENT}'s own average by a meaningful margin in this window.</p>
-    </div>`;
+    // 6 — breakdown table
+    const t = titled("Full Breakdown");
+    t.addTable(
+      [
+        ["Bank", "Followers", "Posts", "Total Eng.", "Avg / Post", "Eng. Rate", "Eng. SoV"].map((h) => ({
+          text: h, options: { bold: true, color: "FFFFFF", fill: PPT_DARK, fontSize: 11 },
+        })),
+        ...rows.map((r) => [
+          r.bank, nf.format(r.followers), String(r.posts), nf.format(r.engagement),
+          nf.format(Math.round(r.avgPerPost)),
+          r.engRate === null ? "—" : (r.engRate * 100).toFixed(3) + "%", pct(r.engSoV),
+        ].map((text) => ({ text, options: { fontSize: 11, color: r.bank === CLIENT ? PPT_RED : PPT_DARK, bold: r.bank === CLIENT } }))),
+      ],
+      { x: 0.5, y: 1.2, w: 9, colW: [2.0, 1.3, 0.9, 1.3, 1.2, 1.2, 1.1], border: { pt: 0.5, color: "E2E8F0" }, align: "right" }
+    );
+
+    // 7 — themes
+    const { rows: tRows, clientAvg } = themeRows(LAST.posts);
+    const th = titled("Content Themes");
+    th.addText(`Compared against ${CLIENT}'s own average of ${nf.format(Math.round(clientAvg || 0))} interactions per post. Small samples — signals to test, not settled results.`,
+      { x: 0.5, y: 0.9, w: 9, h: 0.4, fontSize: 10, color: PPT_GREY, italic: true });
+    th.addTable(
+      [
+        ["Theme", "BBK posts", "BBK avg", "vs BBK avg", "Market posts", "Market avg"].map((h) => ({
+          text: h, options: { bold: true, color: "FFFFFF", fill: PPT_DARK, fontSize: 11 },
+        })),
+        ...tRows.map((r) => [
+          r.label, String(r.cN), r.cAvg === null ? "—" : nf.format(Math.round(r.cAvg)),
+          r.index === null ? "—" : r.index.toFixed(2) + "x", String(r.mN),
+          r.mAvg === null ? "—" : nf.format(Math.round(r.mAvg)),
+        ].map((text) => ({ text, options: { fontSize: 11, color: PPT_DARK } }))),
+      ],
+      { x: 0.5, y: 1.5, w: 9, colW: [2.6, 1.3, 1.3, 1.4, 1.4, 1.4], border: { pt: 0.5, color: "E2E8F0" }, align: "right" }
+    );
+
+    // 8 — recommendations
+    const recs = recommendations(LAST.agg, LAST.posts, LAST.campaigns);
+    const r1 = titled("What To Do Next");
+    r1.addText(
+      recs.map((r) => ({ text: `${r.title}\n`, options: { bold: true, fontSize: 13, color: PPT_DARK, breakLine: false } }))
+        .flatMap((t, i) => [t, { text: recs[i].body + "\n\n", options: { fontSize: 10.5, color: PPT_GREY } }]),
+      { x: 0.5, y: 1.1, w: 9, h: 4.2, valign: "top" }
+    );
+
+    const src = pptx.addSlide();
+    src.addText("Method & sources", { x: 0.5, y: 0.35, w: 9, h: 0.5, fontSize: 22, bold: true, color: PPT_DARK });
+    src.addText([
+      { text: "Data\n", options: { bold: true, fontSize: 12, color: PPT_DARK } },
+      { text: `Public Instagram posts for ${rows.length} Bahrain retail banks, collected via Apify. Latest ${LAST.posts.length} posts in scope. Follower counts from the same collection run, ${stamp}.\n\n`, options: { fontSize: 11, color: PPT_GREY } },
+      { text: "Engagement\n", options: { bold: true, fontSize: 12, color: PPT_DARK } },
+      { text: "Likes plus comments. Instagram does not expose reach or impressions for accounts you do not own, so engagement rate is calculated per follower rather than per impression.\n\n", options: { fontSize: 11, color: PPT_GREY } },
+      { text: "Campaign posts\n", options: { bold: true, fontSize: 12, color: PPT_DARK } },
+      { text: `Any post earning more than ${OUTLIER_MULTIPLE}x its own account's median is flagged as a prize competition and excluded from the organic baseline. Both views are available in the live dashboard.\n\n`, options: { fontSize: 11, color: PPT_GREY } },
+      { text: "Limitations\n", options: { bold: true, fontSize: 12, color: PPT_DARK } },
+      { text: "Ten posts per account is a narrow window and covers different date ranges per bank depending on posting frequency. Theme classification is keyword-based. Treat single-post findings as hypotheses.", options: { fontSize: 11, color: PPT_GREY } },
+    ], { x: 0.5, y: 1.0, w: 9, h: 4.3, valign: "top" });
+
+    await pptx.writeFile({ fileName: `BBK-Competitor-Intelligence-${new Date().toISOString().slice(0, 10)}.pptx` });
+    label.textContent = "Downloaded";
+    setTimeout(() => (label.textContent = "Download PPT"), 2200);
+  } catch (e) {
+    console.error(e);
+    label.textContent = "Export failed";
+    alert("Could not build the deck: " + (e.message || e) + "\n\nThe page needs an internet connection to load the PowerPoint library.");
+    setTimeout(() => (label.textContent = "Download PPT"), 2500);
+  } finally {
+    btn.disabled = false;
   }
-  $("theme-callout").innerHTML = html;
 }
 
 function render() {
   const campaigns = ALL_POSTS.filter((p) => p._outlier);
   const posts = organicOnly ? ALL_POSTS.filter((p) => !p._outlier) : ALL_POSTS;
   const agg = aggregate(posts, PROFILES);
+  LAST = { agg, posts, campaigns };
 
   renderCampaignPanel(campaigns);
   renderKpis(agg, posts.length);
@@ -577,6 +781,8 @@ function render() {
   $("footer-note").textContent =
     `${nf.format(posts.length)} of ${nf.format(ALL_POSTS.length)} posts · ${agg.rows.length} banks · ` +
     `engagement = likes + comments · times in Asia/Bahrain`;
+
+  armReveals();
 }
 
 async function load() {
@@ -614,8 +820,10 @@ async function load() {
   }
 
   show("dashboard");
+  show("btn-export");
   $("btn-organic").onclick = () => { organicOnly = true; render(); };
   $("btn-all").onclick = () => { organicOnly = false; render(); };
+  $("btn-export").onclick = exportPptx;
   render();
 }
 
