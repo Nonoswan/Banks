@@ -1000,21 +1000,6 @@ function recommendations({ rows }, posts, campaigns) {
     return out;
   }
 
-  const pos = rows.indexOf(bbk);
-  const leader = rows[0];
-  if (leader.bank !== CLIENT) {
-    add("red", pct(leader.engSoV - bbk.engSoV), "behind the leader",
-      `${leader.bank} leads share of attention`,
-      `${CLIENT} sits ${ordinal(pos + 1)} of ${rows.length} on the share of conversation it owns.`,
-      [{ label: leader.bank, value: leader.engSoV * 100, unit: "%" },
-       { label: CLIENT, value: bbk.engSoV * 100, unit: "%", self: true }]);
-  } else {
-    add("green", pct(bbk.engSoV), "share of attention", `${CLIENT} leads share of attention`,
-      "The task is defending the position rather than closing a gap.",
-      [{ label: CLIENT, value: bbk.engSoV * 100, unit: "%", self: true },
-       { label: rows[1] ? rows[1].bank : "next", value: rows[1] ? rows[1].engSoV * 100 : 0, unit: "%" }]);
-  }
-
   if (bbk.audSoV) {
     const index = bbk.engSoV / bbk.audSoV;
     const pair = [{ label: "Audience owned", value: bbk.audSoV * 100, unit: "%" },
@@ -1028,45 +1013,6 @@ function recommendations({ rows }, posts, campaigns) {
         "The content outperforms the audience behind it",
         "Reach is the binding constraint — and that one does respond to spend.", pair);
     }
-  }
-
-  const rated = rows.filter((r) => r.engRate !== null).sort((x, y) => y.engRate - x.engRate);
-  const bestRate = rated[0];
-  if (bestRate && bbk.engRate && bestRate.bank !== CLIENT) {
-    add("amber", (bestRate.engRate / bbk.engRate).toFixed(1) + "×", "strongest yield",
-      `${bestRate.bank} earns far more per follower`,
-      `From an audience roughly ${Math.round(bbk.followers / Math.max(bestRate.followers, 1))}× smaller. Scale is not what decides this.`,
-      [{ label: bestRate.bank, value: bestRate.engRate * 100, unit: "%", dp: 3 },
-       { label: CLIENT, value: bbk.engRate * 100, unit: "%", dp: 3, self: true }]);
-  }
-
-  const { rows: tRows } = themeRows(posts);
-  const heavy = tRows.filter((r) => r.cN >= 2).sort((x, y) => y.cN - x.cN)[0];
-  if (heavy && heavy.mAvg && heavy.cAvg < heavy.mAvg * 0.9) {
-    add("red", (heavy.cAvg / heavy.mAvg).toFixed(2) + "×", "vs market, same theme",
-      `${CLIENT}'s most-used theme underperforms`,
-      `${heavy.cN} of ${CLIENT}'s posts are ${heavy.label.toLowerCase()}. Same subject, executed better elsewhere.`,
-      [{ label: "Market", value: heavy.mAvg }, { label: CLIENT, value: heavy.cAvg, self: true }]);
-  }
-
-  const under = tRows.filter((r) => r.cN <= 1 && r.mAvg && r.mN >= 4).sort((x, y) => y.mAvg - x.mAvg)[0];
-  if (under) {
-    add("blue", nf.format(Math.round(under.mAvg)), "best theme, market",
-      `Strongest theme in the market, least used by ${CLIENT}`,
-      `${CLIENT} ran ${under.cN === 0 ? "none" : "one"} in this window. Small sample — a position to test.`,
-      [{ label: under.label, value: under.mAvg }, { label: CLIENT + " overall", value: bbk.avgPerPost, self: true }]);
-  }
-
-  const fmt = groupStats(posts, FORMATS);
-  const myFmtN = fmt.reduce((acc, g) => acc + g.myN, 0);
-  const leaned = fmt.filter((g) => g.myN >= 2 && g.n >= 3).sort((x, y) => y.myN - x.myN)[0];
-  const bestFmt = fmt.filter((g) => g.n >= 3).sort((x, y) => y.avg - x.avg)[0];
-  if (leaned && bestFmt && leaned.key !== bestFmt.key) {
-    add("amber", (bestFmt.avg / Math.max(leaned.avg, 1)).toFixed(1) + "×",
-      `${FORMATS.short[bestFmt.key]} vs ${FORMATS.short[leaned.key]}`,
-      `${CLIENT} is weighted towards the weaker format`,
-      `${leaned.label} is ${pct(leaned.myN / myFmtN)} of ${CLIENT}'s posts. A mix decision, not a production one.`,
-      [{ label: bestFmt.label, value: bestFmt.avg }, { label: leaned.label, value: leaned.avg, self: true }]);
   }
 
   // Purpose sits in this reader's remit, so it gets its own point rather than
@@ -1094,6 +1040,60 @@ function recommendations({ rows }, posts, campaigns) {
       `${top.label} content earns the most`,
       `${CLIENT} writes ${myTotal ? pct(top.myN / myTotal) : "none"} of its posts that way. Costs nothing to change.`,
       [{ label: top.label, value: top.avg }, { label: bottom.label, value: bottom.avg, self: true }]);
+  }
+
+  const fmt = groupStats(posts, FORMATS);
+  const myFmtN = fmt.reduce((acc, g) => acc + g.myN, 0);
+  const leaned = fmt.filter((g) => g.myN >= 2 && g.n >= 3).sort((x, y) => y.myN - x.myN)[0];
+  const bestFmt = fmt.filter((g) => g.n >= 3).sort((x, y) => y.avg - x.avg)[0];
+  if (leaned && bestFmt && leaned.key !== bestFmt.key) {
+    add("amber", (bestFmt.avg / Math.max(leaned.avg, 1)).toFixed(1) + "×",
+      `${FORMATS.short[bestFmt.key]} vs ${FORMATS.short[leaned.key]}`,
+      `${CLIENT} is weighted towards the weaker format`,
+      `${leaned.label} is ${pct(leaned.myN / myFmtN)} of ${CLIENT}'s posts. A mix decision, not a production one.`,
+      [{ label: bestFmt.label, value: bestFmt.avg }, { label: leaned.label, value: leaned.avg, self: true }]);
+  }
+
+  const { rows: tRows } = themeRows(posts);
+  const heavy = tRows.filter((r) => r.cN >= 2).sort((x, y) => y.cN - x.cN)[0];
+  if (heavy && heavy.mAvg && heavy.cAvg < heavy.mAvg * 0.9) {
+    add("red", (heavy.cAvg / heavy.mAvg).toFixed(2) + "×", "vs market, same theme",
+      `${CLIENT}'s most-used theme underperforms`,
+      `${heavy.cN} of ${CLIENT}'s posts are ${heavy.label.toLowerCase()}. Same subject, executed better elsewhere.`,
+      [{ label: "Market", value: heavy.mAvg }, { label: CLIENT, value: heavy.cAvg, self: true }]);
+  }
+
+  const under = tRows.filter((r) => r.cN <= 1 && r.mAvg && r.mN >= 4).sort((x, y) => y.mAvg - x.mAvg)[0];
+  if (under) {
+    add("blue", nf.format(Math.round(under.mAvg)), "best theme, market",
+      `Strongest theme in the market, least used by ${CLIENT}`,
+      `${CLIENT} ran ${under.cN === 0 ? "none" : "one"} in this window. Small sample — a position to test.`,
+      [{ label: under.label, value: under.mAvg }, { label: CLIENT + " overall", value: bbk.avgPerPost, self: true }]);
+  }
+
+  const rated = rows.filter((r) => r.engRate !== null).sort((x, y) => y.engRate - x.engRate);
+  const bestRate = rated[0];
+  if (bestRate && bbk.engRate && bestRate.bank !== CLIENT) {
+    add("amber", (bestRate.engRate / bbk.engRate).toFixed(1) + "×", "strongest yield",
+      `${bestRate.bank} earns far more per follower`,
+      `From an audience roughly ${Math.round(bbk.followers / Math.max(bestRate.followers, 1))}× smaller. Scale is not what decides this.`,
+      [{ label: bestRate.bank, value: bestRate.engRate * 100, unit: "%", dp: 3 },
+       { label: CLIENT, value: bbk.engRate * 100, unit: "%", dp: 3, self: true }]);
+  }
+
+  const pos = rows.indexOf(bbk);
+  const leader = rows[0];
+  if (leader.bank !== CLIENT) {
+    add("red", pct(leader.engSoV - bbk.engSoV), "behind the leader",
+      `${leader.bank} leads share of attention`,
+      `${CLIENT} sits ${ordinal(pos + 1)} of ${rows.length} on the share of conversation it owns.`,
+      [{ label: leader.bank, value: leader.engSoV * 100, unit: "%" },
+       { label: CLIENT, value: bbk.engSoV * 100, unit: "%", self: true }]);
+  } else {
+    add("green", pct(bbk.engSoV), "share of attention", `${CLIENT} leads share of attention`,
+      "The task is defending the position rather than closing a gap.",
+      [{ label: CLIENT, value: bbk.engSoV * 100, unit: "%", self: true },
+       { label: rows[1] ? rows[1].bank : "next", value: rows[1] ? rows[1].engSoV * 100 : 0, unit: "%" }]);
   }
 
   return out;
@@ -1322,9 +1322,15 @@ async function exportPptx() {
     cover.addText("Prepared for Mohamed K. Alaali", { x: 0.6, y: 4.15, w: 8.8, h: 0.3, fontSize: 13, color: "CBD5E1" });
     cover.addText(`${stamp}  ·  organic baseline — campaign posts excluded`, { x: 0.6, y: 4.55, w: 8.8, h: 0.3, fontSize: 11, color: "64748B" });
 
+    const PAGE = "F1F5F9", CARD = "FFFFFF", EDGE = "E2E8F0";
+    const card = (sl, x, y, w, h) => sl.addShape(pptx.ShapeType.roundRect, {
+      x, y, w, h, fill: { color: CARD }, line: { color: EDGE, width: 1 }, rectRadius: 0.05,
+    });
+
     // 2 — where BBK stands
     const sum = pptx.addSlide();
-    sum.addText("Where BBK stands", { x: 0.5, y: 0.35, w: 9, h: 0.5, fontSize: 22, bold: true, color: PPT_DARK });
+    sum.background = { color: PAGE };
+    sum.addText("Where BBK stands", { x: 0.5, y: 0.3, w: 9, h: 0.45, fontSize: 22, bold: true, color: PPT_DARK });
     if (bbk && bbk.audSoV) {
       const n = rows.length;
       const ranks = [
@@ -1333,64 +1339,75 @@ async function exportPptx() {
         [ordinal(rows.filter((r) => r.engRate !== null).sort((x, y) => y.engRate - x.engRate).findIndex((r) => r.bank === CLIENT) + 1), "Return per follower"],
       ];
       ranks.forEach(([big, small], i) => {
-        const x = 0.7 + i * 3.0;
-        sum.addText(big, { x, y: 1.0, w: 2.6, h: 0.8, fontSize: 44, bold: true, color: PPT_BLUE, align: "center" });
-        sum.addText(`${small}\nof ${n} banks`, { x, y: 1.8, w: 2.6, h: 0.5, fontSize: 11, color: PPT_GREY, align: "center" });
+        const x = 0.5 + i * 3.1, w = 2.8;
+        card(sum, x, 0.95, w, 1.35);
+        sum.addText(big, { x, y: 1.08, w, h: 0.62, fontSize: 34, bold: true, color: PPT_BLUE, align: "center" });
+        sum.addText(small, { x, y: 1.68, w, h: 0.26, fontSize: 11, bold: true, color: PPT_DARK, align: "center" });
+        sum.addText("of " + n + " banks", { x, y: 1.93, w, h: 0.24, fontSize: 9, color: PPT_GREY, align: "center" });
       });
+
       const kpis = [
         [pct(bbk.engSoV), "Engagement SoV"],
-        [bbk.audSoV === null ? "n/a" : pct(bbk.audSoV), "Audience SoV"],
+        [pct(bbk.audSoV), "Audience SoV"],
         [(bbk.engSoV / bbk.audSoV).toFixed(2) + "x", "Performance index"],
         [nf.format(src2.agg.totalEng), "Engagement tracked"],
       ];
       kpis.forEach(([v, k], i) => {
-        const x = 0.7 + i * 2.25;
-        sum.addText(v, { x, y: 2.75, w: 2.0, h: 0.45, fontSize: 20, bold: true, color: PPT_DARK, align: "center" });
-        sum.addText(k, { x, y: 3.2, w: 2.0, h: 0.3, fontSize: 9.5, color: PPT_GREY, align: "center" });
+        const w = 2.13, x = 0.5 + i * (w + 0.16);
+        card(sum, x, 2.5, w, 0.95);
+        sum.addText(v, { x, y: 2.6, w, h: 0.42, fontSize: 19, bold: true, color: PPT_DARK, align: "center" });
+        sum.addText(k, { x, y: 3.02, w, h: 0.28, fontSize: 9, color: PPT_GREY, align: "center" });
       });
-      sum.addShape(pptx.ShapeType.rect, { x: 0.5, y: 3.85, w: 9, h: 1.15, fill: { color: PPT_BLUE } });
+
+      sum.addShape(pptx.ShapeType.roundRect, { x: 0.5, y: 3.65, w: 9, h: 1.15, fill: { color: PPT_BLUE }, rectRadius: 0.05 });
+      sum.addText("BOTTOM LINE", { x: 0.78, y: 3.78, w: 8.5, h: 0.22, fontSize: 8, bold: true, color: "9DB6DA", charSpacing: 2 });
       sum.addText("The audience is already built. The gap is in what gets published against it — and language, format and theme are all measurable and cheap to change.",
-        { x: 0.75, y: 3.95, w: 8.5, h: 0.95, fontSize: 13, bold: true, color: "FFFFFF", valign: "middle" });
+        { x: 0.78, y: 4.0, w: 8.45, h: 0.7, fontSize: 12.5, bold: true, color: "FFFFFF", valign: "top" });
     }
 
-    // 3 — the figures that matter: standings drawn as shapes
+    // 3 — share of attention, ranked
     const fig = pptx.addSlide();
-    fig.addText("Share of attention, ranked", { x: 0.5, y: 0.35, w: 9, h: 0.5, fontSize: 22, bold: true, color: PPT_DARK });
+    fig.background = { color: PAGE };
+    fig.addText("Share of attention, ranked", { x: 0.5, y: 0.3, w: 9, h: 0.45, fontSize: 22, bold: true, color: PPT_DARK });
+    card(fig, 0.5, 0.95, 9, 3.35);
     const maxSov = Math.max(...rows.map((r) => r.engSoV), 0.0001);
     rows.forEach((r, i) => {
-      const y = 1.05 + i * 0.52;
-      const isClient = r.bank === CLIENT;
-      fig.addText(r.bank, { x: 0.5, y, w: 2.1, h: 0.4, fontSize: 12, bold: isClient, color: isClient ? PPT_BLUE : PPT_DARK, valign: "middle" });
+      const y = 1.12 + i * 0.52, isClient = r.bank === CLIENT;
+      fig.addText(r.bank, { x: 0.75, y, w: 2.0, h: 0.38, fontSize: 11.5, bold: isClient, color: isClient ? PPT_BLUE : PPT_DARK, valign: "middle" });
       fig.addShape(pptx.ShapeType.roundRect, {
-        x: 2.7, y: y + 0.06, w: Math.max((r.engSoV / maxSov) * 5.4, 0.12), h: 0.26,
-        fill: { color: isClient ? PPT_BLUE : "CBD5E1" }, rectRadius: 0.06,
+        x: 2.85, y: y + 0.08, w: Math.max((r.engSoV / maxSov) * 5.0, 0.1), h: 0.22,
+        fill: { color: isClient ? PPT_BLUE : "CBD5E1" }, rectRadius: 0.05,
       });
-      fig.addText(pct(r.engSoV), { x: 8.3, y, w: 1.1, h: 0.4, fontSize: 12, bold: true, color: isClient ? PPT_BLUE : PPT_DARK, align: "right", valign: "middle" });
+      fig.addText(pct(r.engSoV), { x: 8.05, y, w: 1.15, h: 0.38, fontSize: 11.5, bold: true, color: isClient ? PPT_BLUE : PPT_DARK, align: "right", valign: "middle" });
     });
     if (campaigns.length) {
       const c = campaigns[0];
       const otherEng = src2.posts.reduce((acc, p) => acc + engOf(p), 0);
-      fig.addText(`Context: one ${c.bank_name} prize draw earned ${nf.format(engOf(c))} interactions — ${(engOf(c) / Math.max(otherEng, 1)).toFixed(1)}x the other ${src2.posts.length} posts from all ${rows.length} banks combined. It is excluded above.`,
-        { x: 0.5, y: 4.35, w: 9, h: 0.55, fontSize: 10.5, italic: true, color: PPT_GREY });
+      fig.addText(`Excluded above: one ${c.bank_name} prize draw earned ${nf.format(engOf(c))} interactions — ${(engOf(c) / Math.max(otherEng, 1)).toFixed(1)}x the other ${src2.posts.length} posts from all ${rows.length} banks combined.`,
+        { x: 0.5, y: 4.42, w: 9, h: 0.4, fontSize: 10, italic: true, color: PPT_GREY });
     }
-    fig.addText(`Source: public Instagram, ${rows.length} banks x 10 most recent posts, collected ${stamp} via Apify · engagement = likes + comments · rates are per follower, as Instagram exposes no reach for third-party accounts`,
-      { x: 0.5, y: 4.95, w: 9, h: 0.5, fontSize: 8.5, color: "94A3B8" });
+    fig.addText(`Public Instagram · ${rows.length} banks x 10 most recent posts · collected ${stamp} via Apify · engagement = likes + comments · rates per follower, as Instagram exposes no reach for third-party accounts`,
+      { x: 0.5, y: 4.85, w: 9, h: 0.45, fontSize: 8, color: "94A3B8" });
 
-    // 4 & 5 — what to do next. The campaign caveat is filtered out above:
-    // slide 3 already states it, and repeating it would spend a quarter of a
-    // slide saying the same thing twice.
-    const PER_SLIDE = 4;
-    for (let i = 0; i < recs.length; i += PER_SLIDE) {
-      const chunk = recs.slice(i, i + PER_SLIDE);
-      const sl = pptx.addSlide();
-      sl.addText(i === 0 ? "What To Do Next" : "What To Do Next (cont.)", { x: 0.5, y: 0.35, w: 9, h: 0.5, fontSize: 22, bold: true, color: PPT_DARK });
-      sl.addText(stackRuns(chunk.map((r) => [
-        `${r.metric}  ·  ${r.title}`,
-        r.line + (r.compare && r.compare.length
-          ? "   (" + r.compare.map((c2) => `${c2.label} ${c2.unit === "%" ? c2.value.toFixed(c2.dp || 1) + "%" : nf.format(Math.round(c2.value))}`).join("  vs  ") + ")"
-          : ""),
-      ]), 12.5, 10), { x: 0.5, y: 1.0, w: 9, h: 4.4, valign: "top" });
-    }
+    // 4 — what to do next, on one slide. The campaign caveat is filtered out
+    // above: slide three states it, and repeating it would spend a quarter of
+    // this slide saying the same thing twice.
+    const INK = { red: "DC2626", amber: "B45309", green: "059669", blue: "2563EB" };
+    const act = pptx.addSlide();
+    act.background = { color: PAGE };
+    act.addText("What To Do Next", { x: 0.5, y: 0.3, w: 9, h: 0.45, fontSize: 22, bold: true, color: PPT_DARK });
+    recs.slice(0, 4).forEach((r, i) => {
+      const y = 0.95 + i * 1.06, ink = INK[r.tone] || INK.blue;
+      card(act, 0.5, y, 9, 0.94);
+      act.addShape(pptx.ShapeType.roundRect, { x: 0.65, y: y + 0.12, w: 1.35, h: 0.7, fill: { color: ink }, rectRadius: 0.05 });
+      act.addText(r.metric, { x: 0.65, y: y + 0.19, w: 1.35, h: 0.32, fontSize: 15, bold: true, color: "FFFFFF", align: "center" });
+      act.addText(r.metricLabel, { x: 0.65, y: y + 0.5, w: 1.35, h: 0.24, fontSize: 6.5, color: "FFFFFF", align: "center" });
+      act.addText(r.title, { x: 2.15, y: y + 0.13, w: 7.2, h: 0.28, fontSize: 12.5, bold: true, color: PPT_DARK, valign: "middle" });
+      const pair = r.compare && r.compare.length
+        ? "   " + r.compare.map((c2) => `${c2.label} ${c2.unit === "%" ? c2.value.toFixed(c2.dp || 1) + "%" : nf.format(Math.round(c2.value))}`).join("  vs  ")
+        : "";
+      act.addText(r.line + pair, { x: 2.15, y: y + 0.42, w: 7.2, h: 0.42, fontSize: 9.5, color: PPT_GREY, valign: "top" });
+    });
 
     await pptx.writeFile({ fileName: `BBK-Competitor-Intelligence-${new Date().toISOString().slice(0, 10)}.pptx` });
     label.textContent = "Downloaded";
