@@ -632,6 +632,23 @@ function chartImage(i) {
   return out.toDataURL("image/png").replace(/^data:/, "");
 }
 
+/**
+ * Builds heading/body pairs as PptxGenJS text runs.
+ *
+ * Line breaks come from breakLine rather than "\n": PptxGenJS ignores newlines
+ * inside array-form runs, which silently yields an empty text box. A small
+ * spacer run separates the pairs, since paragraph spacing is not exposed here.
+ */
+function stackRuns(pairs, headSize = 14, bodySize = 11) {
+  const runs = [];
+  pairs.forEach(([head, body], i) => {
+    runs.push({ text: head, options: { bold: true, fontSize: headSize, color: PPT_DARK, breakLine: true } });
+    runs.push({ text: body, options: { fontSize: bodySize, color: PPT_GREY, breakLine: true } });
+    if (i < pairs.length - 1) runs.push({ text: " ", options: { fontSize: 8, breakLine: true } });
+  });
+  return runs;
+}
+
 async function exportPptx() {
   const btn = $("btn-export"), label = $("btn-export-label");
   btn.disabled = true; label.textContent = "Building…";
@@ -677,7 +694,7 @@ async function exportPptx() {
     if (LAST.campaigns.length && organicOnly) {
       const c = LAST.campaigns[0];
       kpi.addText(
-        `Excludes a ${c.bank_name} competition post: ${nf.format(engOf(c))} interactions, ${nf.format(c.comments_count || 0)} of them comments — ${pct(engOf(c) / ALL_POSTS.reduce((a, p) => a + engOf(p), 0))} of all tracked engagement on its own.`,
+        `Excludes a competition post by ${c.bank_name}: ${nf.format(engOf(c))} interactions, ${nf.format(c.comments_count || 0)} of them comments — ${pct(engOf(c) / ALL_POSTS.reduce((a, p) => a + engOf(p), 0))} of all tracked engagement on its own.`,
         { x: 0.5, y: 3.5, w: 9, h: 0.8, fontSize: 11, color: PPT_GREY, italic: true });
     }
 
@@ -729,27 +746,29 @@ async function exportPptx() {
       { x: 0.5, y: 1.5, w: 9, colW: [2.6, 1.3, 1.3, 1.4, 1.4, 1.4], border: { pt: 0.5, color: "E2E8F0" }, align: "right" }
     );
 
-    // 8 — recommendations
+    // 8 — recommendations, paginated three to a slide.
+    //
+    // Two things bit here and both are worth stating. PptxGenJS ignores "\n"
+    // inside array-form text runs — line breaks must come from breakLine, and
+    // using "\n" silently produced an empty slide. And it does not reflow
+    // overflow: six items with bodies simply drew past the bottom edge, so the
+    // pagination is load-bearing rather than cosmetic.
     const recs = recommendations(LAST.agg, LAST.posts, LAST.campaigns);
-    const r1 = titled("What To Do Next");
-    r1.addText(
-      recs.map((r) => ({ text: `${r.title}\n`, options: { bold: true, fontSize: 13, color: PPT_DARK, breakLine: false } }))
-        .flatMap((t, i) => [t, { text: recs[i].body + "\n\n", options: { fontSize: 10.5, color: PPT_GREY } }]),
-      { x: 0.5, y: 1.1, w: 9, h: 4.2, valign: "top" }
-    );
+    const PER_SLIDE = 3;
+    for (let i = 0; i < recs.length; i += PER_SLIDE) {
+      const chunk = recs.slice(i, i + PER_SLIDE);
+      const s = titled(i === 0 ? "What To Do Next" : "What To Do Next (cont.)");
+      s.addText(stackRuns(chunk.map((r) => [r.title, r.body])),
+        { x: 0.5, y: 1.15, w: 9, h: 4.1, valign: "top" });
+    }
 
-    const src = pptx.addSlide();
-    src.addText("Method & sources", { x: 0.5, y: 0.35, w: 9, h: 0.5, fontSize: 22, bold: true, color: PPT_DARK });
-    src.addText([
-      { text: "Data\n", options: { bold: true, fontSize: 12, color: PPT_DARK } },
-      { text: `Public Instagram posts for ${rows.length} Bahrain retail banks, collected via Apify. Latest ${LAST.posts.length} posts in scope. Follower counts from the same collection run, ${stamp}.\n\n`, options: { fontSize: 11, color: PPT_GREY } },
-      { text: "Engagement\n", options: { bold: true, fontSize: 12, color: PPT_DARK } },
-      { text: "Likes plus comments. Instagram does not expose reach or impressions for accounts you do not own, so engagement rate is calculated per follower rather than per impression.\n\n", options: { fontSize: 11, color: PPT_GREY } },
-      { text: "Campaign posts\n", options: { bold: true, fontSize: 12, color: PPT_DARK } },
-      { text: `Any post earning more than ${OUTLIER_MULTIPLE}x its own account's median is flagged as a prize competition and excluded from the organic baseline. Both views are available in the live dashboard.\n\n`, options: { fontSize: 11, color: PPT_GREY } },
-      { text: "Limitations\n", options: { bold: true, fontSize: 12, color: PPT_DARK } },
-      { text: "Ten posts per account is a narrow window and covers different date ranges per bank depending on posting frequency. Theme classification is keyword-based. Treat single-post findings as hypotheses.", options: { fontSize: 11, color: PPT_GREY } },
-    ], { x: 0.5, y: 1.0, w: 9, h: 4.3, valign: "top" });
+    const src = titled("Method & sources");
+    src.addText(stackRuns([
+      ["Data", `Public Instagram posts for ${rows.length} Bahrain retail banks, collected via Apify. Latest ${LAST.posts.length} posts in scope. Follower counts from the same collection run, ${stamp}.`],
+      ["Engagement", "Likes plus comments. Instagram does not expose reach or impressions for accounts you do not own, so engagement rate is calculated per follower rather than per impression."],
+      ["Campaign posts", `Any post earning more than ${OUTLIER_MULTIPLE}x its own account's median is flagged as a prize competition and excluded from the organic baseline. Both views are available in the live dashboard.`],
+      ["Limitations", "Ten posts per account is a narrow window and covers different date ranges per bank depending on posting frequency. Theme classification is keyword-based. Treat single-post findings as hypotheses."],
+    ], 12, 10.5), { x: 0.5, y: 1.0, w: 9, h: 4.3, valign: "top" });
 
     await pptx.writeFile({ fileName: `BBK-Competitor-Intelligence-${new Date().toISOString().slice(0, 10)}.pptx` });
     label.textContent = "Downloaded";
