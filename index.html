@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  :root { --bbk: #C8102E; --bbk-dark: #8E0B20; --ease: cubic-bezier(.22,1,.36,1); }
+  :root { --bbk: #083981; --bbk-dark: #052A61; --bbk-gold: #FFD200; --bbk-orange: #FAA634; --ease: cubic-bezier(.22,1,.36,1); }
   html { scroll-behavior: smooth; }
   .num { font-variant-numeric: tabular-nums; }
 
@@ -25,17 +25,17 @@
   /* Slow-drifting gradient. Long durations on purpose: it should read as depth,
      not as something demanding attention while someone is reading figures. */
   .hero { position: relative; overflow: hidden;
-    background: linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #3B1520 70%, #0F172A 100%);
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #0A2E63 70%, #0F172A 100%);
     background-size: 300% 300%; animation: heroShift 20s ease-in-out infinite; }
   .hero::before { content: ""; position: absolute; inset: -40%; pointer-events: none;
-    background: radial-gradient(circle at 30% 30%, rgba(200,16,46,.30), transparent 55%);
+    background: radial-gradient(circle at 30% 30%, rgba(8,57,129,.50), transparent 55%);
     animation: drift 24s ease-in-out infinite alternate; }
   .hero > * { position: relative; z-index: 1; }
   @keyframes heroShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
   @keyframes drift { from { transform: translate(-6%,-4%) scale(1); } to { transform: translate(8%,6%) scale(1.18); } }
 
   #scroll-progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 70;
-    background: linear-gradient(90deg, var(--bbk), #FF6B85); transition: width .12s linear; }
+    background: linear-gradient(90deg, var(--bbk), var(--bbk-gold)); transition: width .12s linear; }
 
   .bar { height: 100%; width: 0; border-radius: 9999px; transition: width 1.1s var(--ease); }
 
@@ -46,7 +46,7 @@
   .fade-up { animation: fadeUp .45s ease-out both; }
 
   #btn-export { transition: transform .25s var(--ease), box-shadow .25s ease, filter .2s ease; }
-  #btn-export:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 14px 30px -10px rgba(200,16,46,.6); }
+  #btn-export:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 14px 30px -10px rgba(8,57,129,.6); }
   #btn-export:disabled { opacity: .6; cursor: wait; transform: none; }
 
   /* Anyone who has asked their OS for less motion gets none of it. */
@@ -119,9 +119,14 @@
 
   <header class="hero mb-4 rounded-2xl shadow-lg p-5 sm:p-7 text-white">
     <div class="flex flex-wrap gap-4 justify-between items-start">
-      <div class="min-w-0">
-        <h1 class="text-xl sm:text-3xl font-bold tracking-tight">BBK Competitor Intelligence</h1>
-        <p class="text-xs sm:text-sm text-slate-300 mt-1">Instagram share of voice · Bahrain retail banking</p>
+      <div class="flex items-center gap-4 min-w-0">
+        <!-- BBK's own white-on-dark logo, embedded rather than hotlinked so the
+             page stays self-contained and keeps working offline. -->
+        <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAyNS4yLjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjxzdmcgdmVyc2lvbj0iMS4xIiBpZD0iSXNvbGF0aW9uX01vZGUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCINCgkgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMzM5LjEgMTkwLjciIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDMzOS4xIDE5MC43OyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+DQo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPg0KCS5zdDB7ZmlsbDojRkZGRkZGO30NCgkuc3Qxe2ZpbGw6I0ZGRDIwMDt9DQoJLnN0MntmaWxsOiNGQUE2MzQ7fQ0KPC9zdHlsZT4NCjxnPg0KCTxyZWN0IHg9IjMzNC4xIiB5PSIxODYuNSIgY2xhc3M9InN0MCIgd2lkdGg9IjQuOCIgaGVpZ2h0PSI0LjQiLz4NCgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTkxLjIsMTI0LjNjMCwwLTMuNi0xLjYtOS44LTUuNGMtOS43LTYtMjItMTYtMjYuNS0yMC40bDMtMi4ybDIxLjgtMTcuNWgtMjEuNGwtMjAuMiwxNy41bDAtMTcuNUgxMjINCgkJbC0wLjEsNDQuNkgxMzhsMC0xMi41bDUuNC00LjFjMi40LDIuMiw0LjcsNC41LDcuOCw2LjdjNyw1LDE2LjYsMTEuMiwyOC41LDExLjhDMTg1LjcsMTI1LjUsMTkxLjIsMTI0LjMsMTkxLjIsMTI0LjMgTTc3LjEsOTUuOQ0KCQloMTZjMy40LDAsNC45LTEuNyw0LjktMy44YzAtMi0xLjUtMy43LTQuOS0zLjdoLTE2TDc3LjEsOTUuOXogTTk0LjMsMTEzLjdjMy40LDAsNS43LTEuNyw1LjctNC42YzAtMi45LTIuMy00LjQtNS43LTQuNEg3Ny4xbDAsOQ0KCQlIOTQuM3ogTTYxLDc4LjhoMzkuOWMxMS43LDAsMTMuNyw2LjcsMTMuNywxMWMwLDQuMi0yLjUsNy44LTYsOXYwLjFjNS4xLDEuMSw4LjQsNC45LDguNCwxMS4yYzAsNS4zLTIuNywxMy4zLTE3LjUsMTMuM0g2MQ0KCQlMNjEsNzguOHogTTE2LjQsOTUuOWgxNmMzLjQsMCw0LjktMS43LDQuOS0zLjhjMC0yLTEuNS0zLjctNC45LTMuN2gtMTZMMTYuNCw5NS45eiBNMzMuNywxMTMuN2MzLjQsMCw1LjctMS43LDUuNy00LjYNCgkJYzAtMi45LTIuMy00LjQtNS43LTQuNEgxNi40bDAsOUgzMy43eiBNMC40LDc4LjhoMzkuOWMxMS43LDAsMTMuNyw2LjcsMTMuNywxMWMwLDQuMi0yLjUsNy44LTYsOXYwLjFjNS4xLDEuMSw4LjQsNC45LDguNCwxMS4yDQoJCWMwLDUuMy0yLjcsMTMuMy0xNy41LDEzLjNIMC4zTDAuNCw3OC44eiIvPg0KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik01OC4xLDE3Ny44YzAsMC4xLDAsMC41LTAuNywwLjVoLTIuNGMtMC42LDAtMC43LTAuNC0wLjctMC41di0zLjFjMC0wLjEsMC0wLjUsMC43LTAuNWgyLjQNCgkJYzAuNiwwLDAuNywwLjMsMC43LDAuNVYxNzcuOHogTTEwNy41LDE3OC4zdi02LjRjMC0wLjMsMC0yLjUtMy0yLjVINzQuN2MwLTEuOCwxLjgtNS40LDEzLjItNS40bDIuMi00LjljLTMuMywwLTIxLTIuMi0yMi43LDE1LjINCgkJSDEwMmMwLjYsMCwwLjcsMC4zLDAuNywwLjV2My4xYzAsMC4xLDAsMC41LTAuNywwLjVINjMuMXYtNi40YzAtMC4zLDAtMi41LTMtMi41aC03LjVjLTMsMC0zLDIuMi0zLDIuNXY4LjljMCwwLjMsMCwyLjUsMywyLjVoNS42DQoJCWMwLDEuMy0wLjUsNC4yLTUuNyw0LjNsMi43LDMuMmMwLDAsNy45LDAsNy45LTYuOHYtMC43aDUwLjdjMywwLDMtMi4yLDMtMi41di0yMS42bC00LjksMi4ydjE2LjVjMCwwLjEsMCwwLjUtMC42LDAuNUgxMDcuNXoiLz4NCgk8cG9seWdvbiBjbGFzcz0ic3QwIiBwb2ludHM9IjI2My44LDE4My4yIDI2OC43LDE4My4yIDI2OC43LDE1OS4xIDI2My44LDE2MS4zIAkiLz4NCgk8cG9seWdvbiBjbGFzcz0ic3QwIiBwb2ludHM9IjEyMS4xLDE4My4yIDEyNiwxODMuMiAxMjYsMTU5LjEgMTIxLjEsMTYxLjMgCSIvPg0KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0zMzMuNywxNzEuNXY2LjNjMCwwLjEsMCwwLjUtMC43LDAuNWgtMy43di05bC00LjksMi4ydjYuM2MwLDAuMSwwLDAuNS0wLjYsMC41aC0zLjd2LTYuNGMwLTAuMywwLTIuNS0zLTIuNQ0KCQloLTI5LjljMC0xLjgsMS44LTUuNCwxMy4yLTUuNGwyLjItNC45Yy0zLjQsMC0yMS0yLjItMjIuNywxNS4yaDM0LjZjMC42LDAsMC42LDAuMywwLjYsMC41djMuMWMwLDAuMSwwLDAuNS0wLjYsMC41aC0zOC45djQuOWg2MA0KCQljMywwLDMtMi4yLDMtMi41di0xMS40TDMzMy43LDE3MS41eiIvPg0KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yNTQuNSwxNzcuOGMwLDAuMSwwLDAuNS0wLjYsMC41aC0zLjd2LTlsLTQuOSwyLjJ2Ni4zYzAsMC4xLDAsMC41LTAuNywwLjVIMjQxdi02LjVjMC0wLjMsMC0yLjUtMy0yLjVoLTMyLjQNCgkJbDIuNCw0LjloMjcuNGMwLjYsMCwwLjYsMC4zLDAuNiwwLjV2My42aC0zNi44di05bC00LjksMi4ydjExLjNjMCwwLjksMC4xLDQuNS01LjYsNC42bDIuNywzLjJjMCwwLDcuOSwwLDcuOS02Ljh2LTAuN2g1Ny4yDQoJCWMzLDAsMy0yLjIsMy0yLjV2LTIxLjZsLTQuOSwyLjJWMTc3Ljh6Ii8+DQoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTE5MCwxODAuN3YtMTEuNGwtNC45LDIuMnY2LjNjMCwwLjEsMCwwLjUtMC42LDAuNWgtMTMuOXYtOWwtNC45LDIuMnYxMy44YzAsMC4xLDAsMC41LTAuNiwwLjVoLTgNCgkJYy0wLjYsMC0wLjYtMC40LTAuNi0wLjV2LTE2bC00LjksMi4ydjE2LjdjMCwwLjMsMCwyLjUsMywyLjVoMTNjMywwLDMtMi4yLDMtMi41di01SDE4N0MxOTAsMTgzLjIsMTkwLDE4MSwxOTAsMTgwLjciLz4NCgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTQwLjYsMTc3LjhjMCwwLjEsMCwwLjUtMC43LDAuNWgtMi40Yy0wLjcsMC0wLjctMC40LTAuNy0wLjV2LTMuMWMwLTAuMSwwLTAuNSwwLjctMC41aDIuNA0KCQljMC42LDAsMC43LDAuMywwLjcsMC41VjE3Ny44eiBNMTQyLjUsMTY5LjNIMTM1Yy0zLDAtMywyLjItMywyLjV2OC45YzAsMC4zLDAsMi41LDMsMi41aDUuNmMwLDEuMy0wLjUsNC4yLTUuNiw0LjNsMi43LDMuMg0KCQljMCwwLDcuOSwwLDcuOS02Ljh2LTEyLjFDMTQ1LjYsMTcxLjUsMTQ1LjYsMTY5LjMsMTQyLjUsMTY5LjMiLz4NCgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNNDAuMiwxNzEuNXY2LjNjMCwwLjEsMCwwLjUtMC42LDAuNWgtMy43di05bC00LjksMi4ydjYuM2MwLDAuMSwwLDAuNS0wLjcsMC41SDUuNmMtMC42LDAtMC42LTAuNC0wLjYtMC41DQoJCXYtNi4zTDAsMTY5LjN2MTEuNGMwLDAuMywwLDIuNSwzLDIuNWgzOS4xYzMsMCwzLTIuMiwzLTIuNXYtMTEuNEw0MC4yLDE3MS41eiIvPg0KCTxyZWN0IHg9IjMyNC40IiB5PSIxNjEuNCIgY2xhc3M9InN0MCIgd2lkdGg9IjQuOCIgaGVpZ2h0PSI0LjQiLz4NCgk8cmVjdCB4PSIxNjEiIHk9IjE2MS40IiBjbGFzcz0ic3QwIiB3aWR0aD0iNC44IiBoZWlnaHQ9IjQuNCIvPg0KCTxyZWN0IHg9IjE5IiB5PSIxNjEuNCIgY2xhc3M9InN0MCIgd2lkdGg9IjQuOCIgaGVpZ2h0PSI0LjQiLz4NCgk8cmVjdCB4PSIxMi40IiB5PSIxNjEuNCIgY2xhc3M9InN0MCIgd2lkdGg9IjQuOCIgaGVpZ2h0PSI0LjQiLz4NCgk8cmVjdCB4PSIzOSIgeT0iMTg2IiBjbGFzcz0ic3QwIiB3aWR0aD0iNC44IiBoZWlnaHQ9IjQuNCIvPg0KCTxyZWN0IHg9IjMyLjMiIHk9IjE4NiIgY2xhc3M9InN0MCIgd2lkdGg9IjQuOCIgaGVpZ2h0PSI0LjQiLz4NCgk8cmVjdCB4PSIxODAuOCIgeT0iMTg2IiBjbGFzcz0ic3QwIiB3aWR0aD0iNC44IiBoZWlnaHQ9IjQuNCIvPg0KCTxyZWN0IHg9IjE3NC4xIiB5PSIxODYiIGNsYXNzPSJzdDAiIHdpZHRoPSI0LjgiIGhlaWdodD0iNC40Ii8+DQoJPHJlY3QgeD0iMjQ1LjMiIHk9IjE4NiIgY2xhc3M9InN0MCIgd2lkdGg9IjQuOCIgaGVpZ2h0PSI0LjQiLz4NCgk8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMTk2LjMsNjYuM2MyLjYtNi40LDkuMy05LjksMTUuOS04LjdjMS4yLDYuNS0yLjMsMTMuMi04LjcsMTUuOWwtMTIuMiw1LjFMMTk2LjMsNjYuM0wxOTYuMyw2Ni4zeiIvPg0KCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0xOTIuNCw0Ni43TDE5Mi40LDQ2LjdjNi40LTIuNiwxMy42LTAuNCwxNy40LDUuMWMtMy44LDUuNC0xMSw3LjctMTcuNCw1LjFsLTEyLjItNS4xTDE5Mi40LDQ2Ljd6Ii8+DQoJPHBhdGggY2xhc3M9InN0MSIgZD0iTTIyMy44LDQ1LjljLTEuMi02LjUsMi4zLTEzLjIsOC43LTE1LjlsMTIuMi01LjFsLTUuMSwxMi4yQzIzNyw0My42LDIzMC4zLDQ3LjEsMjIzLjgsNDUuOSIvPg0KCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0yMjYuMiw1MS43YzMuOC01LjQsMTEtNy43LDE3LjQtNS4xbDAsMGwxMi4yLDVsLTEyLjIsNS4xQzIzNy4yLDU5LjQsMjMwLDU3LjIsMjI2LjIsNTEuNyIvPg0KCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0yMTgsNDMuNWMtNS40LTMuOC03LjctMTEtNS4xLTE3LjRsMCwwbDUtMTIuMmw1LjEsMTIuMmMwLDAsMCwwLDAsMEMyMjUuNywzMi41LDIyMy40LDM5LjcsMjE4LDQzLjUiLz4NCgk8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMjEyLjIsNDUuOWMtNi41LDEuMi0xMy4yLTIuMy0xNS45LTguN0wxOTEuMiwyNWwxMi4yLDUuMWgwQzIwOS44LDMyLjcsMjEzLjMsMzkuNCwyMTIuMiw0NS45Ii8+DQoJPHBhdGggY2xhc3M9InN0MSIgZD0iTTIxOCw1OS45YzUuNCwzLjgsNy43LDExLDUuMSwxNy40bC01LDEyLjJsLTUuMS0xMi4yQzIxMC4zLDcwLjksMjEyLjUsNjMuNywyMTgsNTkuOSIvPg0KCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0yMjMuOCw1Ny41YzYuNS0xLjIsMTMuMiwyLjMsMTUuOSw4LjdsNS4xLDEyLjJsLTEyLjItNUMyMjYuMSw3MC43LDIyMi42LDY0LjEsMjIzLjgsNTcuNSIvPg0KCTxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0yMjMuNiwxMDEuNGM1LjEtMTIuNCwxOC4xLTE5LjIsMzAuOC0xNi45YzIuMywxMi43LTQuNSwyNS43LTE2LjksMzAuOGwtMjMuNyw5LjhMMjIzLjYsMTAxLjRMMjIzLjYsMTAxLjR6Ig0KCQkvPg0KCTxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0yNzcsNjEuOWMtMi4zLTEyLjcsNC41LTI1LjcsMTYuOS0zMC44djBsMjMuNy05LjhsLTkuOCwyMy43QzMwMi43LDU3LjMsMjg5LjcsNjQuMSwyNzcsNjEuOSIvPg0KCTxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0yODEuNiw3My4xYzcuNC0xMC42LDIxLjMtMTUsMzMuNy05LjljMCwwLDAsMCwwLDBsMjMuNyw5LjhsLTIzLjcsOS44QzMwMyw4OC4xLDI4OSw4My43LDI4MS42LDczLjEiLz4NCgk8cGF0aCBjbGFzcz0ic3QyIiBkPSJNMjY1LjcsNTcuMmMtMTAuNi03LjQtMTUtMjEuMy05LjktMzMuN3YwbDkuOC0yMy43bDkuOCwyMy43YzAsMCwwLDAsMCwwQzI4MC43LDM1LjgsMjc2LjMsNDkuOCwyNjUuNyw1Ny4yIi8+DQoJPHBhdGggY2xhc3M9InN0MiIgZD0iTTI2NS43LDg5LjFjMTAuNiw3LjQsMTUsMjEuMyw5LjksMzMuOGwtOS44LDIzLjdsLTkuOC0yMy43QzI1MC44LDExMC40LDI1NS4yLDk2LjUsMjY1LjcsODkuMSIvPg0KCTxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0yNzcsODQuNGMxMi43LTIuMiwyNS43LDQuNSwzMC44LDE2LjlsMCwwbDkuOCwyMy43bC0yMy43LTkuOEMyODEuNSwxMTAuMSwyNzQuOCw5Ny4xLDI3Nyw4NC40Ii8+DQo8L2c+DQo8L3N2Zz4NCg==" alt="BBK" class="h-10 sm:h-14 w-auto shrink-0">
+        <div class="min-w-0">
+          <h1 class="text-xl sm:text-3xl font-bold tracking-tight">Competitor Intelligence</h1>
+          <p class="text-xs sm:text-sm text-slate-300 mt-1">Instagram share of voice · Bahrain retail banking</p>
+        </div>
       </div>
       <div class="text-right shrink-0">
         <span id="status-pill" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-slate-200">
@@ -276,17 +281,17 @@
         The same method extends to the places customers actually form an opinion:
       </p>
       <ul class="mt-5 space-y-2.5 text-sm sm:text-base text-slate-300">
-        <li class="flex gap-3"><span class="text-red-400 font-bold shrink-0">—</span>
+        <li class="flex gap-3"><span class="font-bold shrink-0" style="color: var(--bbk-gold)">—</span>
           <span><span class="text-white font-semibold">The BBK app, walked end to end</span> — onboarding, transfers, card controls and support, set beside the same journeys on rival apps, with every point of friction ranked by what it costs you</span></li>
-        <li class="flex gap-3"><span class="text-red-400 font-bold shrink-0">—</span>
+        <li class="flex gap-3"><span class="font-bold shrink-0" style="color: var(--bbk-gold)">—</span>
           <span><span class="text-white font-semibold">App store reviews</span> — what customers say about the BBK app next to every competitor's, grouped by what they are actually complaining about</span></li>
-        <li class="flex gap-3"><span class="text-red-400 font-bold shrink-0">—</span>
+        <li class="flex gap-3"><span class="font-bold shrink-0" style="color: var(--bbk-gold)">—</span>
           <span><span class="text-white font-semibold">Google reviews, branch by branch</span> — where service perception is won and lost</span></li>
-        <li class="flex gap-3"><span class="text-red-400 font-bold shrink-0">—</span>
+        <li class="flex gap-3"><span class="font-bold shrink-0" style="color: var(--bbk-gold)">—</span>
           <span><span class="text-white font-semibold">The website</span> — how the digital front door compares to the field</span></li>
-        <li class="flex gap-3"><span class="text-red-400 font-bold shrink-0">—</span>
+        <li class="flex gap-3"><span class="font-bold shrink-0" style="color: var(--bbk-gold)">—</span>
           <span><span class="text-white font-semibold">Competitor ad spend</span> — what rivals are putting behind paid media, through Meta's ad library</span></li>
-        <li class="flex gap-3"><span class="text-red-400 font-bold shrink-0">—</span>
+        <li class="flex gap-3"><span class="font-bold shrink-0" style="color: var(--bbk-gold)">—</span>
           <span><span class="text-white font-semibold">The other platforms</span> — LinkedIn, X and TikTok, where the audiences differ</span></li>
       </ul>
       <p class="text-slate-300 text-sm sm:text-base mt-5 leading-relaxed">
@@ -353,8 +358,8 @@ const classify = (p) => (THEMES.find((t) => t.re.test(p.caption || "")) || OTHER
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const BBK_RED = "#C8102E";
-const PALETTE = ["#1E4E79", "#2E8B8B", "#B07C2A", "#6A5ACD", "#3F7D3F", "#8A6F5C"];
+const BBK_BLUE = "#083981";
+const PALETTE = ["#6A5ACD", "#2E8B8B", "#B07C2A", "#3F7D3F", "#A34E7B", "#8A6F5C"];
 
 const nf = new Intl.NumberFormat("en-BH");
 const pct = (n) => (n * 100).toFixed(1) + "%";
@@ -463,7 +468,7 @@ function aggregate(posts, profiles) {
   return { rows: [...byBank.values()].sort((a, b) => b.engagement - a.engagement), totalEng, totalFol };
 }
 
-const colourFor = (row, i) => (row.bank === CLIENT ? BBK_RED : PALETTE[i % PALETTE.length]);
+const colourFor = (row, i) => (row.bank === CLIENT ? BBK_BLUE : PALETTE[i % PALETTE.length]);
 
 function renderKpis({ rows, totalEng }, postCount) {
   const bbk = rows.find((r) => r.bank === CLIENT);
@@ -547,9 +552,9 @@ function renderCharts({ rows }) {
 function renderTable({ rows }) {
   $("table-body").innerHTML = rows.map((r) => {
     const isClient = r.bank === CLIENT;
-    return `<tr class="border-b border-slate-100 ${isClient ? "bg-red-50 font-semibold" : ""}">
+    return `<tr class="border-b border-slate-100 ${isClient ? "bg-blue-50 font-semibold" : ""}">
       <td class="py-3 px-2 sm:px-3">
-        <span class="inline-block w-2 h-2 rounded-full mr-2 align-middle" style="background:${isClient ? BBK_RED : "#94a3b8"}"></span>
+        <span class="inline-block w-2 h-2 rounded-full mr-2 align-middle" style="background:${isClient ? BBK_BLUE : "#94a3b8"}"></span>
         ${esc(r.bank)}<span class="text-slate-400 font-normal text-[10px] sm:text-xs ml-1 hidden sm:inline">@${esc(r.handle)}</span>
       </td>
       <td class="py-3 px-2 sm:px-3 text-right num">${r.followers ? nf.format(r.followers) : "<span class='text-slate-300'>—</span>"}</td>
@@ -573,7 +578,7 @@ function renderStandings({ rows }) {
 
   $("standings").innerHTML = rows.map((r, i) => {
     const isClient = r.bank === CLIENT;
-    const clientStyle = isClient ? `color:${BBK_RED}` : "";
+    const clientStyle = isClient ? `color:${BBK_BLUE}` : "";
     const gap = i === 0 ? "leader" : "−" + pct(leader.engSoV - r.engSoV);
     return `<div class="flex items-center gap-3">
       <span class="w-5 shrink-0 text-right text-sm font-extrabold ${isClient ? "" : "text-slate-300"}" style="${clientStyle}">${i + 1}</span>
@@ -756,7 +761,7 @@ function renderRecommendations(agg, posts, campaigns) {
 function renderTopPosts(posts) {
   const top = [...posts].sort((a, b) => engOf(b) - engOf(a)).slice(0, 5);
   $("top-posts").innerHTML = top.map((p, i) => `
-    <div class="flex gap-3 items-start p-3 rounded-lg border border-slate-100 ${p.bank_name === CLIENT ? "bg-red-50" : "bg-slate-50"}">
+    <div class="flex gap-3 items-start p-3 rounded-lg border border-slate-100 ${p.bank_name === CLIENT ? "bg-blue-50" : "bg-slate-50"}">
       <span class="text-slate-300 font-bold text-lg num">${i + 1}</span>
       <div class="flex-1 min-w-0">
         <div class="flex flex-wrap justify-between gap-2">
@@ -798,7 +803,7 @@ function renderCampaignPanel(campaigns) {
 // PowerPoint export
 // ---------------------------------------------------------------------------
 
-const PPT_DARK = "0F172A", PPT_GREY = "64748B", PPT_RED = "C8102E";
+const PPT_DARK = "0F172A", PPT_GREY = "64748B", PPT_BLUE = "083981";
 
 function chartImage(i) {
   // Chart.js renders on a transparent canvas; slides are white, so a flattened
@@ -870,7 +875,7 @@ async function exportPptx() {
     cards.forEach(([h, v, sub], i) => {
       const x = 0.5 + i * 2.3;
       kpi.addText(h.toUpperCase(), { x, y: 1.5, w: 2.1, h: 0.3, fontSize: 9, bold: true, color: PPT_GREY });
-      kpi.addText(v, { x, y: 1.8, w: 2.1, h: 0.7, fontSize: 28, bold: true, color: i === 0 ? PPT_RED : PPT_DARK });
+      kpi.addText(v, { x, y: 1.8, w: 2.1, h: 0.7, fontSize: 28, bold: true, color: i === 0 ? PPT_BLUE : PPT_DARK });
       kpi.addText(sub, { x, y: 2.5, w: 2.1, h: 0.5, fontSize: 8, color: PPT_GREY });
     });
     if (LAST.campaigns.length && organicOnly) {
@@ -904,7 +909,7 @@ async function exportPptx() {
           r.bank, nf.format(r.followers), String(r.posts), nf.format(r.engagement),
           nf.format(Math.round(r.avgPerPost)),
           r.engRate === null ? "—" : (r.engRate * 100).toFixed(3) + "%", pct(r.engSoV),
-        ].map((text) => ({ text, options: { fontSize: 11, color: r.bank === CLIENT ? PPT_RED : PPT_DARK, bold: r.bank === CLIENT } }))),
+        ].map((text) => ({ text, options: { fontSize: 11, color: r.bank === CLIENT ? PPT_BLUE : PPT_DARK, bold: r.bank === CLIENT } }))),
       ],
       { x: 0.5, y: 1.2, w: 9, colW: [2.0, 1.3, 0.9, 1.3, 1.2, 1.2, 1.1], border: { pt: 0.5, color: "E2E8F0" }, align: "right" }
     );
