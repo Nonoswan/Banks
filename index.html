@@ -21,7 +21,10 @@
   .card { transition: box-shadow .3s ease, transform .3s var(--ease), border-color .3s ease; }
   .card:hover { box-shadow: 0 18px 45px -20px rgba(15,23,42,.4); transform: translateY(-3px); border-color: #cbd5e1; }
 
-  #btn-print { transition: transform .25s var(--ease), box-shadow .25s ease, filter .2s ease; }
+  /* Clear of the home indicator and Safari's bottom bar, which otherwise sit
+     on top of the button on a phone. */
+  #btn-print { transition: transform .25s var(--ease), box-shadow .25s ease, filter .2s ease;
+    bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px)); }
   #btn-print:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 14px 30px -10px rgba(8,57,129,.6); }
 
   /* Slow-drifting gradient. Long durations on purpose: it should read as depth,
@@ -154,33 +157,39 @@
 
 <div class="max-w-7xl mx-auto p-3 sm:p-6">
 
-  <header class="hero mb-4 rounded-2xl shadow-lg p-5 sm:p-7 text-white">
-    <div class="flex flex-wrap gap-4 justify-between items-start">
-      <div class="flex items-center gap-4 min-w-0">
+  <!-- Stacks on a phone. The right-hand column used to be shrink-0 inside a flex
+       row, so on a narrow screen it could not shrink and simply overflowed: the
+       Live pill, the timestamp, the second toggle button and the mode note all
+       ran off the edge. -->
+  <header class="hero mb-4 rounded-2xl shadow-lg p-4 sm:p-7 text-white overflow-hidden">
+    <div class="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-4 sm:justify-between sm:items-start">
+      <div class="flex items-center gap-3 sm:gap-4 min-w-0">
         <!-- BBK's own white-on-dark logo, embedded rather than hotlinked so the
              page stays self-contained and keeps working offline. -->
         <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAyNS4yLjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiA2LjAwIEJ1aWxkIDApICAtLT4NCjxzdmcgdmVyc2lvbj0iMS4xIiBpZD0iSXNvbGF0aW9uX01vZGUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCINCgkgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMzM5LjEgMTkwLjciIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDMzOS4xIDE5MC43OyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+DQo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPg0KCS5zdDB7ZmlsbDojRkZGRkZGO30NCgkuc3Qxe2ZpbGw6I0ZGRDIwMDt9DQoJLnN0MntmaWxsOiNGQUE2MzQ7fQ0KPC9zdHlsZT4NCjxnPg0KCTxyZWN0IHg9IjMzNC4xIiB5PSIxODYuNSIgY2xhc3M9InN0MCIgd2lkdGg9IjQuOCIgaGVpZ2h0PSI0LjQiLz4NCgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTkxLjIsMTI0LjNjMCwwLTMuNi0xLjYtOS44LTUuNGMtOS43LTYtMjItMTYtMjYuNS0yMC40bDMtMi4ybDIxLjgtMTcuNWgtMjEuNGwtMjAuMiwxNy41bDAtMTcuNUgxMjINCgkJbC0wLjEsNDQuNkgxMzhsMC0xMi41bDUuNC00LjFjMi40LDIuMiw0LjcsNC41LDcuOCw2LjdjNyw1LDE2LjYsMTEuMiwyOC41LDExLjhDMTg1LjcsMTI1LjUsMTkxLjIsMTI0LjMsMTkxLjIsMTI0LjMgTTc3LjEsOTUuOQ0KCQloMTZjMy40LDAsNC45LTEuNyw0LjktMy44YzAtMi0xLjUtMy43LTQuOS0zLjdoLTE2TDc3LjEsOTUuOXogTTk0LjMsMTEzLjdjMy40LDAsNS43LTEuNyw1LjctNC42YzAtMi45LTIuMy00LjQtNS43LTQuNEg3Ny4xbDAsOQ0KCQlIOTQuM3ogTTYxLDc4LjhoMzkuOWMxMS43LDAsMTMuNyw2LjcsMTMuNywxMWMwLDQuMi0yLjUsNy44LTYsOXYwLjFjNS4xLDEuMSw4LjQsNC45LDguNCwxMS4yYzAsNS4zLTIuNywxMy4zLTE3LjUsMTMuM0g2MQ0KCQlMNjEsNzguOHogTTE2LjQsOTUuOWgxNmMzLjQsMCw0LjktMS43LDQuOS0zLjhjMC0yLTEuNS0zLjctNC45LTMuN2gtMTZMMTYuNCw5NS45eiBNMzMuNywxMTMuN2MzLjQsMCw1LjctMS43LDUuNy00LjYNCgkJYzAtMi45LTIuMy00LjQtNS43LTQuNEgxNi40bDAsOUgzMy43eiBNMC40LDc4LjhoMzkuOWMxMS43LDAsMTMuNyw2LjcsMTMuNywxMWMwLDQuMi0yLjUsNy44LTYsOXYwLjFjNS4xLDEuMSw4LjQsNC45LDguNCwxMS4yDQoJCWMwLDUuMy0yLjcsMTMuMy0xNy41LDEzLjNIMC4zTDAuNCw3OC44eiIvPg0KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik01OC4xLDE3Ny44YzAsMC4xLDAsMC41LTAuNywwLjVoLTIuNGMtMC42LDAtMC43LTAuNC0wLjctMC41di0zLjFjMC0wLjEsMC0wLjUsMC43LTAuNWgyLjQNCgkJYzAuNiwwLDAuNywwLjMsMC43LDAuNVYxNzcuOHogTTEwNy41LDE3OC4zdi02LjRjMC0wLjMsMC0yLjUtMy0yLjVINzQuN2MwLTEuOCwxLjgtNS40LDEzLjItNS40bDIuMi00LjljLTMuMywwLTIxLTIuMi0yMi43LDE1LjINCgkJSDEwMmMwLjYsMCwwLjcsMC4zLDAuNywwLjV2My4xYzAsMC4xLDAsMC41LTAuNywwLjVINjMuMXYtNi40YzAtMC4zLDAtMi41LTMtMi41aC03LjVjLTMsMC0zLDIuMi0zLDIuNXY4LjljMCwwLjMsMCwyLjUsMywyLjVoNS42DQoJCWMwLDEuMy0wLjUsNC4yLTUuNyw0LjNsMi43LDMuMmMwLDAsNy45LDAsNy45LTYuOHYtMC43aDUwLjdjMywwLDMtMi4yLDMtMi41di0yMS42bC00LjksMi4ydjE2LjVjMCwwLjEsMCwwLjUtMC42LDAuNUgxMDcuNXoiLz4NCgk8cG9seWdvbiBjbGFzcz0ic3QwIiBwb2ludHM9IjI2My44LDE4My4yIDI2OC43LDE4My4yIDI2OC43LDE1OS4xIDI2My44LDE2MS4zIAkiLz4NCgk8cG9seWdvbiBjbGFzcz0ic3QwIiBwb2ludHM9IjEyMS4xLDE4My4yIDEyNiwxODMuMiAxMjYsMTU5LjEgMTIxLjEsMTYxLjMgCSIvPg0KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0zMzMuNywxNzEuNXY2LjNjMCwwLjEsMCwwLjUtMC43LDAuNWgtMy43di05bC00LjksMi4ydjYuM2MwLDAuMSwwLDAuNS0wLjYsMC41aC0zLjd2LTYuNGMwLTAuMywwLTIuNS0zLTIuNQ0KCQloLTI5LjljMC0xLjgsMS44LTUuNCwxMy4yLTUuNGwyLjItNC45Yy0zLjQsMC0yMS0yLjItMjIuNywxNS4yaDM0LjZjMC42LDAsMC42LDAuMywwLjYsMC41djMuMWMwLDAuMSwwLDAuNS0wLjYsMC41aC0zOC45djQuOWg2MA0KCQljMywwLDMtMi4yLDMtMi41di0xMS40TDMzMy43LDE3MS41eiIvPg0KCTxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yNTQuNSwxNzcuOGMwLDAuMSwwLDAuNS0wLjYsMC41aC0zLjd2LTlsLTQuOSwyLjJ2Ni4zYzAsMC4xLDAsMC41LTAuNywwLjVIMjQxdi02LjVjMC0wLjMsMC0yLjUtMy0yLjVoLTMyLjQNCgkJbDIuNCw0LjloMjcuNGMwLjYsMCwwLjYsMC4zLDAuNiwwLjV2My42aC0zNi44di05bC00LjksMi4ydjExLjNjMCwwLjksMC4xLDQuNS01LjYsNC42bDIuNywzLjJjMCwwLDcuOSwwLDcuOS02Ljh2LTAuN2g1Ny4yDQoJCWMzLDAsMy0yLjIsMy0yLjV2LTIxLjZsLTQuOSwyLjJWMTc3Ljh6Ii8+DQoJPHBhdGggY2xhc3M9InN0MCIgZD0iTTE5MCwxODAuN3YtMTEuNGwtNC45LDIuMnY2LjNjMCwwLjEsMCwwLjUtMC42LDAuNWgtMTMuOXYtOWwtNC45LDIuMnYxMy44YzAsMC4xLDAsMC41LTAuNiwwLjVoLTgNCgkJYy0wLjYsMC0wLjYtMC40LTAuNi0wLjV2LTE2bC00LjksMi4ydjE2LjdjMCwwLjMsMCwyLjUsMywyLjVoMTNjMywwLDMtMi4yLDMtMi41di01SDE4N0MxOTAsMTgzLjIsMTkwLDE4MSwxOTAsMTgwLjciLz4NCgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTQwLjYsMTc3LjhjMCwwLjEsMCwwLjUtMC43LDAuNWgtMi40Yy0wLjcsMC0wLjctMC40LTAuNy0wLjV2LTMuMWMwLTAuMSwwLTAuNSwwLjctMC41aDIuNA0KCQljMC42LDAsMC43LDAuMywwLjcsMC41VjE3Ny44eiBNMTQyLjUsMTY5LjNIMTM1Yy0zLDAtMywyLjItMywyLjV2OC45YzAsMC4zLDAsMi41LDMsMi41aDUuNmMwLDEuMy0wLjUsNC4yLTUuNiw0LjNsMi43LDMuMg0KCQljMCwwLDcuOSwwLDcuOS02Ljh2LTEyLjFDMTQ1LjYsMTcxLjUsMTQ1LjYsMTY5LjMsMTQyLjUsMTY5LjMiLz4NCgk8cGF0aCBjbGFzcz0ic3QwIiBkPSJNNDAuMiwxNzEuNXY2LjNjMCwwLjEsMCwwLjUtMC42LDAuNWgtMy43di05bC00LjksMi4ydjYuM2MwLDAuMSwwLDAuNS0wLjcsMC41SDUuNmMtMC42LDAtMC42LTAuNC0wLjYtMC41DQoJCXYtNi4zTDAsMTY5LjN2MTEuNGMwLDAuMywwLDIuNSwzLDIuNWgzOS4xYzMsMCwzLTIuMiwzLTIuNXYtMTEuNEw0MC4yLDE3MS41eiIvPg0KCTxyZWN0IHg9IjMyNC40IiB5PSIxNjEuNCIgY2xhc3M9InN0MCIgd2lkdGg9IjQuOCIgaGVpZ2h0PSI0LjQiLz4NCgk8cmVjdCB4PSIxNjEiIHk9IjE2MS40IiBjbGFzcz0ic3QwIiB3aWR0aD0iNC44IiBoZWlnaHQ9IjQuNCIvPg0KCTxyZWN0IHg9IjE5IiB5PSIxNjEuNCIgY2xhc3M9InN0MCIgd2lkdGg9IjQuOCIgaGVpZ2h0PSI0LjQiLz4NCgk8cmVjdCB4PSIxMi40IiB5PSIxNjEuNCIgY2xhc3M9InN0MCIgd2lkdGg9IjQuOCIgaGVpZ2h0PSI0LjQiLz4NCgk8cmVjdCB4PSIzOSIgeT0iMTg2IiBjbGFzcz0ic3QwIiB3aWR0aD0iNC44IiBoZWlnaHQ9IjQuNCIvPg0KCTxyZWN0IHg9IjMyLjMiIHk9IjE4NiIgY2xhc3M9InN0MCIgd2lkdGg9IjQuOCIgaGVpZ2h0PSI0LjQiLz4NCgk8cmVjdCB4PSIxODAuOCIgeT0iMTg2IiBjbGFzcz0ic3QwIiB3aWR0aD0iNC44IiBoZWlnaHQ9IjQuNCIvPg0KCTxyZWN0IHg9IjE3NC4xIiB5PSIxODYiIGNsYXNzPSJzdDAiIHdpZHRoPSI0LjgiIGhlaWdodD0iNC40Ii8+DQoJPHJlY3QgeD0iMjQ1LjMiIHk9IjE4NiIgY2xhc3M9InN0MCIgd2lkdGg9IjQuOCIgaGVpZ2h0PSI0LjQiLz4NCgk8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMTk2LjMsNjYuM2MyLjYtNi40LDkuMy05LjksMTUuOS04LjdjMS4yLDYuNS0yLjMsMTMuMi04LjcsMTUuOWwtMTIuMiw1LjFMMTk2LjMsNjYuM0wxOTYuMyw2Ni4zeiIvPg0KCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0xOTIuNCw0Ni43TDE5Mi40LDQ2LjdjNi40LTIuNiwxMy42LTAuNCwxNy40LDUuMWMtMy44LDUuNC0xMSw3LjctMTcuNCw1LjFsLTEyLjItNS4xTDE5Mi40LDQ2Ljd6Ii8+DQoJPHBhdGggY2xhc3M9InN0MSIgZD0iTTIyMy44LDQ1LjljLTEuMi02LjUsMi4zLTEzLjIsOC43LTE1LjlsMTIuMi01LjFsLTUuMSwxMi4yQzIzNyw0My42LDIzMC4zLDQ3LjEsMjIzLjgsNDUuOSIvPg0KCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0yMjYuMiw1MS43YzMuOC01LjQsMTEtNy43LDE3LjQtNS4xbDAsMGwxMi4yLDVsLTEyLjIsNS4xQzIzNy4yLDU5LjQsMjMwLDU3LjIsMjI2LjIsNTEuNyIvPg0KCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0yMTgsNDMuNWMtNS40LTMuOC03LjctMTEtNS4xLTE3LjRsMCwwbDUtMTIuMmw1LjEsMTIuMmMwLDAsMCwwLDAsMEMyMjUuNywzMi41LDIyMy40LDM5LjcsMjE4LDQzLjUiLz4NCgk8cGF0aCBjbGFzcz0ic3QxIiBkPSJNMjEyLjIsNDUuOWMtNi41LDEuMi0xMy4yLTIuMy0xNS45LTguN0wxOTEuMiwyNWwxMi4yLDUuMWgwQzIwOS44LDMyLjcsMjEzLjMsMzkuNCwyMTIuMiw0NS45Ii8+DQoJPHBhdGggY2xhc3M9InN0MSIgZD0iTTIxOCw1OS45YzUuNCwzLjgsNy43LDExLDUuMSwxNy40bC01LDEyLjJsLTUuMS0xMi4yQzIxMC4zLDcwLjksMjEyLjUsNjMuNywyMTgsNTkuOSIvPg0KCTxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0yMjMuOCw1Ny41YzYuNS0xLjIsMTMuMiwyLjMsMTUuOSw4LjdsNS4xLDEyLjJsLTEyLjItNUMyMjYuMSw3MC43LDIyMi42LDY0LjEsMjIzLjgsNTcuNSIvPg0KCTxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0yMjMuNiwxMDEuNGM1LjEtMTIuNCwxOC4xLTE5LjIsMzAuOC0xNi45YzIuMywxMi43LTQuNSwyNS43LTE2LjksMzAuOGwtMjMuNyw5LjhMMjIzLjYsMTAxLjRMMjIzLjYsMTAxLjR6Ig0KCQkvPg0KCTxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0yNzcsNjEuOWMtMi4zLTEyLjcsNC41LTI1LjcsMTYuOS0zMC44djBsMjMuNy05LjhsLTkuOCwyMy43QzMwMi43LDU3LjMsMjg5LjcsNjQuMSwyNzcsNjEuOSIvPg0KCTxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0yODEuNiw3My4xYzcuNC0xMC42LDIxLjMtMTUsMzMuNy05LjljMCwwLDAsMCwwLDBsMjMuNyw5LjhsLTIzLjcsOS44QzMwMyw4OC4xLDI4OSw4My43LDI4MS42LDczLjEiLz4NCgk8cGF0aCBjbGFzcz0ic3QyIiBkPSJNMjY1LjcsNTcuMmMtMTAuNi03LjQtMTUtMjEuMy05LjktMzMuN3YwbDkuOC0yMy43bDkuOCwyMy43YzAsMCwwLDAsMCwwQzI4MC43LDM1LjgsMjc2LjMsNDkuOCwyNjUuNyw1Ny4yIi8+DQoJPHBhdGggY2xhc3M9InN0MiIgZD0iTTI2NS43LDg5LjFjMTAuNiw3LjQsMTUsMjEuMyw5LjksMzMuOGwtOS44LDIzLjdsLTkuOC0yMy43QzI1MC44LDExMC40LDI1NS4yLDk2LjUsMjY1LjcsODkuMSIvPg0KCTxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0yNzcsODQuNGMxMi43LTIuMiwyNS43LDQuNSwzMC44LDE2LjlsMCwwbDkuOCwyMy43bC0yMy43LTkuOEMyODEuNSwxMTAuMSwyNzQuOCw5Ny4xLDI3Nyw4NC40Ii8+DQo8L2c+DQo8L3N2Zz4NCg==" alt="BBK" class="h-10 sm:h-14 w-auto shrink-0">
         <div class="min-w-0">
-          <h1 class="text-xl sm:text-3xl font-bold tracking-tight">Competitor Intelligence</h1>
-          <p class="text-xs sm:text-sm text-slate-300 mt-1">Instagram share of voice · Bahrain retail banking</p>
+          <h1 class="text-lg sm:text-3xl font-bold tracking-tight leading-tight">Competitor Intelligence</h1>
+          <p class="text-[11px] sm:text-sm text-slate-300 mt-0.5 sm:mt-1">Instagram share of voice · Bahrain retail banking</p>
         </div>
       </div>
-      <div class="text-right shrink-0">
-        <span id="status-pill" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-slate-200">
-          <span class="live-dot w-2 h-2 rounded-full bg-slate-300"></span><span id="status-text">Connecting…</span>
-        </span>
-        <p id="status-detail" class="text-xs text-slate-400 mt-1"></p>
+      <div class="w-full sm:w-auto min-w-0 text-left sm:text-right sm:shrink-0">
+        <div class="flex flex-wrap items-center gap-x-2 gap-y-1 sm:block">
+          <span id="status-pill" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-slate-200">
+            <span class="live-dot w-2 h-2 rounded-full bg-slate-300"></span><span id="status-text">Connecting…</span>
+          </span>
+          <p id="status-detail" class="text-[11px] sm:text-xs text-slate-400 sm:mt-1"></p>
+        </div>
 
         <!-- Which figures the page is built on. It belongs at the top because it
              governs every number below it, not only the panel it used to sit in. -->
-        <div id="view-toggle" class="hidden mt-3">
-          <div class="inline-flex rounded-lg overflow-hidden text-xs font-semibold border border-white/25">
-            <button id="btn-organic" class="px-3 py-1.5 transition">Organic baseline</button>
-            <button id="btn-all" class="px-3 py-1.5 transition border-l border-white/25">As collected</button>
+        <div id="view-toggle" class="hidden mt-2.5 sm:mt-3">
+          <div class="inline-flex max-w-full rounded-lg overflow-hidden text-[11px] sm:text-xs font-semibold border border-white/25">
+            <button id="btn-organic" class="px-2.5 sm:px-3 py-1.5 transition whitespace-nowrap">Organic baseline</button>
+            <button id="btn-all" class="px-2.5 sm:px-3 py-1.5 transition border-l border-white/25 whitespace-nowrap">As collected</button>
           </div>
           <!-- Arbitrary value on purpose: max-w-72 is not in Tailwind v3's
                max-width scale, so the CDN build silently ignores it. -->
-          <p class="text-[11px] text-slate-400 mt-1.5 sm:max-w-[19rem] sm:ml-auto leading-snug" id="mode-note"></p>
+          <p class="text-[11px] text-slate-400 mt-1.5 max-w-full sm:max-w-[19rem] sm:ml-auto leading-snug" id="mode-note"></p>
         </div>
       </div>
     </div>
@@ -426,8 +435,8 @@
 
 <!-- Stays reachable at any scroll position. Printing captures the whole
      document, both views, not whatever happens to be on screen. -->
-<button id="btn-print" class="hidden fixed bottom-5 right-4 sm:right-6 z-50 shadow-xl rounded-full
-  px-5 py-3.5 text-sm font-semibold text-white flex items-center gap-2 transition hover:brightness-110 active:scale-95"
+<button id="btn-print" class="hidden fixed right-3 sm:right-6 z-50 shadow-xl rounded-full
+  px-4 sm:px-5 py-3 sm:py-3.5 text-xs sm:text-sm font-semibold text-white flex items-center gap-2 transition hover:brightness-110 active:scale-95"
   style="background: var(--bbk)">
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
     <polyline points="6 9 6 2 18 2 18 9"></polyline>
