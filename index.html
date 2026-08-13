@@ -9,17 +9,35 @@
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  :root { --bbk: #C8102E; --bbk-dark: #8E0B20; }
+  :root { --bbk: #C8102E; --bbk-dark: #8E0B20; --ease: cubic-bezier(.22,1,.36,1); }
+  html { scroll-behavior: smooth; }
   .num { font-variant-numeric: tabular-nums; }
 
-  /* Scroll-reveal. Elements start displaced and settle as they enter view. */
-  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .55s ease-out, transform .55s ease-out; }
-  .reveal.in { opacity: 1; transform: none; }
+  /* Scroll-reveal. Elements settle in from below with the blur lifting —
+     the blur is what separates this from a plain fade. */
+  .reveal { opacity: 0; transform: translateY(24px) scale(.985); filter: blur(7px);
+    transition: opacity .7s var(--ease), transform .7s var(--ease), filter .6s ease-out; }
+  .reveal.in { opacity: 1; transform: none; filter: none; }
 
-  .card { transition: box-shadow .25s ease, transform .25s ease; }
-  .card:hover { box-shadow: 0 10px 30px -12px rgba(15,23,42,.25); transform: translateY(-2px); }
+  .card { transition: box-shadow .3s ease, transform .3s var(--ease), border-color .3s ease; }
+  .card:hover { box-shadow: 0 18px 45px -20px rgba(15,23,42,.4); transform: translateY(-3px); border-color: #cbd5e1; }
 
-  .hero { background: linear-gradient(135deg, #0F172A 0%, #1E293B 55%, #33131B 100%); }
+  /* Slow-drifting gradient. Long durations on purpose: it should read as depth,
+     not as something demanding attention while someone is reading figures. */
+  .hero { position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 40%, #3B1520 70%, #0F172A 100%);
+    background-size: 300% 300%; animation: heroShift 20s ease-in-out infinite; }
+  .hero::before { content: ""; position: absolute; inset: -40%; pointer-events: none;
+    background: radial-gradient(circle at 30% 30%, rgba(200,16,46,.30), transparent 55%);
+    animation: drift 24s ease-in-out infinite alternate; }
+  .hero > * { position: relative; z-index: 1; }
+  @keyframes heroShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+  @keyframes drift { from { transform: translate(-6%,-4%) scale(1); } to { transform: translate(8%,6%) scale(1.18); } }
+
+  #scroll-progress { position: fixed; top: 0; left: 0; height: 3px; width: 0; z-index: 70;
+    background: linear-gradient(90deg, var(--bbk), #FF6B85); transition: width .12s linear; }
+
+  .bar { height: 100%; width: 0; border-radius: 9999px; transition: width 1.1s var(--ease); }
 
   @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
   .live-dot { animation: pulseDot 2s ease-in-out infinite; }
@@ -27,17 +45,23 @@
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
   .fade-up { animation: fadeUp .45s ease-out both; }
 
-  #btn-export:disabled { opacity: .6; cursor: wait; }
+  #btn-export { transition: transform .25s var(--ease), box-shadow .25s ease, filter .2s ease; }
+  #btn-export:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 14px 30px -10px rgba(200,16,46,.6); }
+  #btn-export:disabled { opacity: .6; cursor: wait; transform: none; }
 
   /* Anyone who has asked their OS for less motion gets none of it. */
   @media (prefers-reduced-motion: reduce) {
-    .reveal { opacity: 1; transform: none; transition: none; }
-    .card:hover { transform: none; }
-    .live-dot, .fade-up { animation: none; }
+    html { scroll-behavior: auto; }
+    .reveal { opacity: 1; transform: none; filter: none; transition: none; }
+    .card:hover, #btn-export:hover { transform: none; }
+    .live-dot, .fade-up, .hero, .hero::before { animation: none; }
+    .bar { transition: none; }
   }
 </style>
 </head>
 <body class="bg-slate-100 min-h-screen">
+
+<div id="scroll-progress"></div>
 
 <!-- Access gate. Courtesy only — see ACCESS_CODE in the script for why this is
      not, and cannot be, security on a static page. -->
@@ -159,6 +183,14 @@
         <p id="kpi-total" class="text-2xl sm:text-4xl font-bold text-slate-800 num mt-2">—</p>
         <p id="kpi-total-note" class="text-[10px] sm:text-xs text-slate-400 mt-1"></p>
       </div>
+    </section>
+
+    <!-- Ranked bars. A doughnut shows proportion; a ladder shows position, and
+         position is the story when the client is fourth of six. -->
+    <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
+      <h3 class="font-bold text-slate-800 text-sm sm:text-base">Market Standings</h3>
+      <p class="text-xs text-slate-400 mb-5">Engagement share of voice, ranked</p>
+      <div id="standings" class="space-y-3.5"></div>
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-5">
@@ -463,6 +495,12 @@ function renderCharts({ rows }) {
   CHARTS.forEach((c) => c.destroy());
   CHARTS = [];
   const anim = REDUCED ? false : { duration: 900, easing: "easeOutQuart" };
+  // Bars arrive one after another rather than together — it reads as deliberate
+  // rather than as a page still finishing loading.
+  const barAnim = REDUCED ? false : {
+    duration: 800, easing: "easeOutQuart",
+    delay: (c) => (c.type === "data" && c.mode === "default" ? c.dataIndex * 70 : 0),
+  };
   const labels = rows.map((r) => r.bank);
   const colours = rows.map(colourFor);
 
@@ -483,7 +521,7 @@ function renderCharts({ rows }) {
     type: "bar",
     data: { labels: rated.map((r) => r.bank), datasets: [{ data: rated.map((r) => r.engRate * 100), backgroundColor: rated.map(colourFor), borderRadius: 6 }] },
     options: {
-      maintainAspectRatio: false, animation: anim,
+      maintainAspectRatio: false, animation: barAnim,
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.raw.toFixed(3) + "% of followers engage per post" } } },
       scales: { y: { beginAtZero: true, ticks: { callback: (v) => v.toFixed(2) + "%" } }, x: { ticks: { font: { size: 10 } } } },
     },
@@ -499,7 +537,7 @@ function renderCharts({ rows }) {
       ],
     },
     options: {
-      maintainAspectRatio: false, animation: anim,
+      maintainAspectRatio: false, animation: barAnim,
       plugins: { tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.raw.toFixed(1)}%` } } },
       scales: { y: { beginAtZero: true, ticks: { callback: (v) => v + "%" } }, x: { ticks: { font: { size: 10 } } } },
     },
@@ -522,6 +560,56 @@ function renderTable({ rows }) {
       <td class="py-3 px-2 sm:px-3 text-right num">${pct(r.engSoV)}</td>
     </tr>`;
   }).join("");
+}
+
+/**
+ * Ranked bars, widths animated in. Bars are scaled against the leader rather
+ * than against 100%, so the distance between first and fourth stays legible
+ * even when every share is a small number.
+ */
+function renderStandings({ rows }) {
+  const max = Math.max(...rows.map((r) => r.engSoV), 0.0001);
+  const leader = rows[0];
+
+  $("standings").innerHTML = rows.map((r, i) => {
+    const isClient = r.bank === CLIENT;
+    const clientStyle = isClient ? `color:${BBK_RED}` : "";
+    const gap = i === 0 ? "leader" : "−" + pct(leader.engSoV - r.engSoV);
+    return `<div class="flex items-center gap-3">
+      <span class="w-5 shrink-0 text-right text-sm font-extrabold ${isClient ? "" : "text-slate-300"}" style="${clientStyle}">${i + 1}</span>
+      <div class="flex-1 min-w-0">
+        <div class="flex justify-between items-baseline gap-2 mb-1.5">
+          <span class="text-xs sm:text-sm font-semibold truncate ${isClient ? "" : "text-slate-600"}" style="${clientStyle}">${esc(r.bank)}</span>
+          <span class="shrink-0 text-xs sm:text-sm">
+            <span class="font-bold num">${pct(r.engSoV)}</span>
+            <span class="text-slate-400 num ml-1.5">${gap}</span>
+          </span>
+        </div>
+        <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+          <div class="bar" data-w="${((r.engSoV / max) * 100).toFixed(1)}" style="background:${colourFor(r, i)}"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Next frame, so each bar has a zero width to animate away from.
+  requestAnimationFrame(() => {
+    $("standings").querySelectorAll(".bar").forEach((bar, i) => {
+      setTimeout(() => { bar.style.width = bar.dataset.w + "%"; }, REDUCED ? 0 : i * 90);
+    });
+  });
+}
+
+function initScrollProgress() {
+  const el = $("scroll-progress");
+  const update = () => {
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - doc.clientHeight;
+    el.style.width = (max > 0 ? (doc.scrollTop / max) * 100 : 0) + "%";
+  };
+  window.addEventListener("scroll", update, { passive: true });
+  window.addEventListener("resize", update, { passive: true });
+  update();
 }
 
 function themeRows(posts) {
@@ -885,6 +973,7 @@ function render() {
 
   renderCampaignPanel(campaigns);
   renderKpis(agg, posts.length);
+  renderStandings(agg);
   renderCharts(agg);
   renderTable(agg);
   renderThemes(posts);
@@ -978,6 +1067,7 @@ function setupGate() {
 }
 
 setupGate();
+initScrollProgress();
 
 load().catch((e) => {
   console.error(e);
