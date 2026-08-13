@@ -100,6 +100,30 @@
 
 <div id="scroll-progress"></div>
 
+<!-- Shown instead of everything else once EXPIRES_ON has passed. Like the access
+     gate this is a courtesy, not enforcement — see the constant in the script. -->
+<div id="expired" class="hidden fixed inset-0 z-[70] hero overflow-y-auto">
+  <div class="min-h-full flex items-center justify-center p-5 sm:p-8">
+    <div class="w-full max-w-md text-center">
+      <div class="mx-auto w-12 h-12 rounded-2xl flex items-center justify-center mb-6 bg-white/10">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 14"></polyline>
+        </svg>
+      </div>
+      <h1 class="text-white text-xl sm:text-2xl font-bold">This link has expired</h1>
+      <p class="text-slate-300 text-sm mt-4 leading-relaxed">
+        The BBK competitor analysis was shared for a limited period and is no longer available at
+        this address. The underlying data continues to update, so a current version can be sent on
+        request.
+      </p>
+      <p class="text-slate-400 text-sm mt-5">
+        Naheed Abdulla Ebrahim<br>
+        <a href="mailto:naheed@almoayyed.com" class="text-white hover:underline">naheed@almoayyed.com</a>
+      </p>
+    </div>
+  </div>
+</div>
+
 <!-- Access gate. Courtesy only — see ACCESS_CODE in the script for why this is
      not, and cannot be, security on a static page. -->
 <div id="gate" class="hidden fixed inset-0 z-[60] hero overflow-y-auto">
@@ -424,8 +448,18 @@
       <p class="text-slate-300 text-sm sm:text-base mt-5 leading-relaxed">
         Each is a view of the market BBK doesn't have today. Built properly, they keep themselves up to date.
       </p>
-      <p class="text-slate-400 text-sm mt-5">Happy to show you what any of them would look like.</p>
-      <p class="text-white font-semibold mt-1">Naheed</p>
+      <!-- Read without a conversation attached, so the reply path has to be on
+           the page. An offer with nothing to answer is a dead end. -->
+      <p class="text-slate-300 text-sm sm:text-base mt-5 leading-relaxed">
+        Happy to show you what any of them would look like — or to walk through the figures above
+        properly, whenever suits you.
+      </p>
+      <div class="mt-6 pt-5 border-t border-white/15">
+        <p class="text-white font-semibold">Naheed Abdulla Ebrahim</p>
+        <p class="text-slate-400 text-sm mt-0.5">Y.K. Almoayyed &amp; Sons</p>
+        <a href="mailto:naheed@almoayyed.com?subject=BBK%20Competitor%20Intelligence"
+           class="inline-block mt-3 text-sm font-semibold text-white underline decoration-white/40 underline-offset-4 hover:decoration-white">naheed@almoayyed.com</a>
+      </div>
     </section>
 
   </div>
@@ -458,6 +492,14 @@ const CLIENT = "BBK";
 // holds, use Vercel's Deployment Protection: it runs server-side, before the
 // page is ever sent.
 const ACCESS_CODE = "BBK2026";
+
+// Date after which the page shows an expiry notice instead of the analysis,
+// in Asia/Bahrain. Same standing as ACCESS_CODE: a courtesy that keeps a stale
+// link from being read as current, not enforcement — anyone who opens developer
+// tools or changes their clock walks straight past it. To actually withdraw
+// access, re-enable Vercel Authentication on the project, or revoke the anon
+// read policy in Supabase so there is no data left to serve.
+const EXPIRES_ON = "2026-08-21";
 
 const OUTLIER_MULTIPLE = 5;
 
@@ -1482,14 +1524,32 @@ window.addEventListener("keydown", (e) => {
   location.reload();
 });
 
-setupGate();
-initScrollProgress();
+/**
+ * Compared as YYYY-MM-DD in Bahrain time, so the link does not expire early for
+ * a reader whose device is in another timezone — en-CA is the locale that
+ * formats that way.
+ */
+function isExpired() {
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Bahrain" });
+  return today > EXPIRES_ON;
+}
 
-load().catch((e) => {
-  console.error(e);
-  setStatus("Error", "error");
-  failTo("Unexpected error", e.message || String(e));
-});
+if (isExpired()) {
+  show("expired");
+  document.body.style.overflow = "hidden";
+} else {
+  setupGate();
+  initScrollProgress();
+  boot();
+}
+
+function boot() {
+  load().catch((e) => {
+    console.error(e);
+    setStatus("Error", "error");
+    failTo("Unexpected error", e.message || String(e));
+  });
+}
 </script>
 </body>
 </html>
