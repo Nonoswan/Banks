@@ -1386,6 +1386,11 @@ const gateSeen = {
 };
 
 function setupGate() {
+  // Opening the page with ?lock forgets the remembered pass, so the welcome can
+  // be rehearsed without closing the tab or digging through developer tools.
+  if (/[?&#]lock\b/.test(location.search + location.hash)) {
+    try { sessionStorage.removeItem("bbk_gate"); } catch { /* fine */ }
+  }
   if (gateSeen.get()) return;          // already through it this session
   show("gate");
   document.body.style.overflow = "hidden";
