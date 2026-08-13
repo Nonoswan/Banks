@@ -21,6 +21,9 @@
   .card { transition: box-shadow .3s ease, transform .3s var(--ease), border-color .3s ease; }
   .card:hover { box-shadow: 0 18px 45px -20px rgba(15,23,42,.4); transform: translateY(-3px); border-color: #cbd5e1; }
 
+  #btn-print { transition: transform .25s var(--ease), box-shadow .25s ease, filter .2s ease; }
+  #btn-print:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 14px 30px -10px rgba(8,57,129,.6); }
+
   /* Slow-drifting gradient. Long durations on purpose: it should read as depth,
      not as something demanding attention while someone is reading figures. */
   .hero { position: relative; overflow: hidden;
@@ -45,11 +48,38 @@
   .fade-up { animation: fadeUp .45s ease-out both; }
 
 
+  /* Print / Save as PDF.
+     Two things would otherwise produce a broken file. Reveal animations leave
+     every un-scrolled panel at opacity 0, so anything the reader had not
+     reached would print blank. And the conclusions live in a second view that
+     is display:none until Continue is clicked, so they would be absent
+     entirely. Both are forced open here, which is why printing captures the
+     whole document rather than the current screen. */
+  @media print {
+    @page { size: A4 landscape; margin: 10mm; }
+    body { background: #fff; }
+    /* Backgrounds and fills are the analysis, not decoration — the navy bars
+       and coloured chips carry meaning, so they must survive the print. */
+    *, *::before, *::after { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    #gate, #scroll-progress, #view-toggle, #btn-continue, #btn-back, #btn-print { display: none !important; }
+    #view-data, #view-next { display: block !important; }
+
+    .reveal { opacity: 1 !important; transform: none !important; filter: none !important; transition: none !important; }
+    .card, .hero { box-shadow: none !important; }
+    .card:hover { transform: none !important; }
+    .live-dot, .hero, .hero::before { animation: none !important; }
+
+    section, .card { break-inside: avoid; page-break-inside: avoid; }
+    #view-next { break-before: page; page-break-before: always; }
+    a[href^="http"]::after { content: ""; }   /* no URL footnotes after post links */
+  }
+
   /* Anyone who has asked their OS for less motion gets none of it. */
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     .reveal { opacity: 1; transform: none; filter: none; transition: none; }
-    .card:hover { transform: none; }
+    .card:hover, #btn-print:hover { transform: none; }
     .live-dot, .fade-up, .hero, .hero::before { animation: none; }
     .bar { transition: none; }
   }
@@ -385,6 +415,19 @@
   </main>
 </div>
 
+
+<!-- Stays reachable at any scroll position. Printing captures the whole
+     document, both views, not whatever happens to be on screen. -->
+<button id="btn-print" class="hidden fixed bottom-5 right-4 sm:right-6 z-50 shadow-xl rounded-full
+  px-5 py-3.5 text-sm font-semibold text-white flex items-center gap-2 transition hover:brightness-110 active:scale-95"
+  style="background: var(--bbk)">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+    <rect x="6" y="14" width="12" height="8"></rect>
+  </svg>
+  Save as PDF
+</button>
 
 <script>
 const SUPABASE_URL = "https://kbcdgleigtjmhzfhkdvp.supabase.co";
@@ -1319,6 +1362,9 @@ async function load() {
 
   $("btn-organic").onclick = () => { organicOnly = true; render(); };
   $("btn-all").onclick = () => { organicOnly = false; render(); };
+
+  show("btn-print");
+  $("btn-print").onclick = () => window.print();
 
   const swap = (from, to) => {
     hide(from); show(to);
