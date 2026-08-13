@@ -223,6 +223,21 @@
       <div id="recommendations" class="space-y-3"></div>
     </section>
 
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-5">
+      <div class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="font-bold text-slate-800 text-sm sm:text-base">Format</h3>
+        <p class="text-xs text-slate-400 mb-5">Average engagement per post by type, across the market</p>
+        <div id="format-body" class="space-y-3.5"></div>
+        <p id="format-note" class="text-xs text-slate-600 mt-5 leading-relaxed"></p>
+      </div>
+      <div class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="font-bold text-slate-800 text-sm sm:text-base">Language</h3>
+        <p class="text-xs text-slate-400 mb-5">By share of Arabic against Latin characters in the caption</p>
+        <div id="language-body" class="space-y-3.5"></div>
+        <p id="language-note" class="text-xs text-slate-600 mt-5 leading-relaxed"></p>
+      </div>
+    </section>
+
     <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
       <h3 class="font-bold text-slate-800 text-sm sm:text-base">Content Themes</h3>
       <p class="text-xs text-slate-400 mb-4">Posts classified by keyword, Arabic and English. Ten posts per bank is a
@@ -605,6 +620,81 @@ function renderStandings({ rows }) {
   });
 }
 
+const ARABIC_RE = /[؀-ۿݐ-ݿ]/g;
+const LATIN_RE = /[A-Za-z]/g;
+
+const FORMATS = {
+  order: ["video", "sidecar", "image"],
+  labels: { video: "Video / Reels", sidecar: "Carousel", image: "Single image" },
+  of: (p) => {
+    const t = (p.post_type || "").toLowerCase();
+    return ["video", "sidecar", "image"].includes(t) ? t : "other";
+  },
+};
+
+const LANGUAGES = {
+  order: ["arabic", "bilingual", "english"],
+  labels: { arabic: "Arabic-led", bilingual: "Balanced bilingual", english: "English-led" },
+  // Decided by the proportion of Arabic to Latin characters, not by presence.
+  // Nearly every Arabic caption here contains Latin characters, because product
+  // names, app names and hashtags stay in English — testing for presence alone
+  // would class almost the entire market as bilingual.
+  of: (p) => {
+    const c = p.caption || "";
+    const ar = (c.match(ARABIC_RE) || []).length;
+    const la = (c.match(LATIN_RE) || []).length;
+    if (ar + la < 20) return "none";                    // too little text to call
+    const share = ar / (ar + la);
+    return share >= 0.8 ? "arabic" : share <= 0.2 ? "english" : "bilingual";
+  },
+};
+
+function groupStats(posts, spec) {
+  const mean = (l) => (l.length ? l.reduce((a, p) => a + engOf(p), 0) / l.length : null);
+  return spec.order.map((key) => {
+    const all = posts.filter((p) => spec.of(p) === key);
+    const mine = all.filter((p) => p.bank_name === CLIENT);
+    return { key, label: spec.labels[key], n: all.length, avg: mean(all), myN: mine.length, myAvg: mean(mine) };
+  }).filter((g) => g.n > 0);
+}
+
+/** Shared renderer for the format and language panels. */
+function renderGroup(bodyId, noteId, groups, minForClaim = 3) {
+  const max = Math.max(...groups.map((g) => g.avg), 1);
+
+  $(bodyId).innerHTML = groups.map((g, i) => `
+    <div>
+      <div class="flex justify-between items-baseline gap-2 mb-1.5">
+        <span class="text-xs sm:text-sm font-semibold text-slate-700">${esc(g.label)}
+          <span class="text-slate-400 font-normal num">· ${g.n} post${g.n === 1 ? "" : "s"}</span></span>
+        <span class="text-xs sm:text-sm font-bold num text-slate-800">${nf.format(Math.round(g.avg))}</span>
+      </div>
+      <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+        <div class="bar" data-w="${((g.avg / max) * 100).toFixed(1)}" style="background:${PALETTE[i % PALETTE.length]}"></div>
+      </div>
+      <p class="text-[11px] text-slate-400 mt-1 num">${CLIENT}: ${g.myN ? nf.format(Math.round(g.myAvg)) + " avg across " + g.myN : "none in this window"}</p>
+    </div>`).join("");
+
+  requestAnimationFrame(() => {
+    $(bodyId).querySelectorAll(".bar").forEach((bar, i) => {
+      setTimeout(() => { bar.style.width = bar.dataset.w + "%"; }, REDUCED ? 0 : i * 90);
+    });
+  });
+
+  // Only compare groups with enough posts behind them to be worth a sentence.
+  const solid = groups.filter((g) => g.n >= minForClaim).sort((a, b) => b.avg - a.avg);
+  if (solid.length < 2) {
+    $(noteId).textContent = "Too few posts in this window to compare these reliably.";
+    return;
+  }
+  const top = solid[0], bottom = solid[solid.length - 1];
+  const myTotal = groups.reduce((a, g) => a + g.myN, 0);
+  let note = `${top.label} earns ${(top.avg / Math.max(bottom.avg, 1)).toFixed(1)}× what ${bottom.label.toLowerCase()} does across the market.`;
+  if (!top.myN) note += ` ${CLIENT} ran none in this window.`;
+  else if (myTotal && top.myN / myTotal < 0.34) note += ` ${CLIENT} uses it for ${pct(top.myN / myTotal)} of its posts.`;
+  $(noteId).textContent = note;
+}
+
 function initScrollProgress() {
   const el = $("scroll-progress");
   const update = () => {
@@ -737,10 +827,42 @@ function recommendations({ rows }, posts, campaigns) {
         `This theme averages ${nf.format(Math.round(under.mAvg))} across ${under.mN} posts market-wide — the strongest of any theme — yet ${CLIENT} ran ${under.cN === 0 ? "none" : "one"} in this window. A hypothesis worth testing, not a settled finding: the sample is small.`);
     }
 
+    // A measured lift rather than received wisdom about video.
+    const fmt = groupStats(posts, FORMATS);
+    const vid = fmt.find((g) => g.key === "video");
+    const still = fmt.find((g) => g.key === "image");
     const marketReel = rows.reduce((a, r) => a + r.reels, 0) / Math.max(1, rows.reduce((a, r) => a + r.posts, 0));
     if (bbk.reelShare < marketReel - 0.1) {
+      const lift = vid && still && still.avg && vid.n >= 3 && still.n >= 3
+        ? ` Video earns ${(vid.avg / still.avg).toFixed(1)}× what single images do in this market — measured here, not assumed.`
+        : "";
       add("amber", "Under-indexed on video",
-        `${pct(bbk.reelShare)} of ${CLIENT}'s tracked posts are video against a market average of ${pct(marketReel)}. Video is the format Instagram's ranking currently favours, and shifting the mix is the cheapest lever available.`);
+        `${pct(bbk.reelShare)} of ${CLIENT}'s tracked posts are video against a market average of ${pct(marketReel)}.${lift} Shifting the mix is the cheapest lever available.`);
+    }
+
+    // Which format the client leans on, against which one actually pays. This
+    // fires where the blanket "post more video" line does not: the client can
+    // sit at the market average for video and still be over-weighted on the
+    // format that earns least.
+    const myFmtN = fmt.reduce((a, g) => a + g.myN, 0);
+    const leaned = fmt.filter((g) => g.myN >= 2 && g.n >= 3).sort((a, b) => b.myN - a.myN)[0];
+    const bestFmt = fmt.filter((g) => g.n >= 3).sort((a, b) => b.avg - a.avg)[0];
+    if (leaned && bestFmt && leaned.key !== bestFmt.key) {
+      const mine = leaned.myAvg && bestFmt.myAvg
+        ? ` ${CLIENT}'s own run the same way: ${nf.format(Math.round(leaned.myAvg))} against ${nf.format(Math.round(bestFmt.myAvg))}.` : "";
+      add("amber", `${CLIENT} leans on the market's weaker format`,
+        `${leaned.label} is ${pct(leaned.myN / myFmtN)} of ${CLIENT}'s posts and averages ${nf.format(Math.round(leaned.avg))} across the market, against ${nf.format(Math.round(bestFmt.avg))} for ${bestFmt.label.toLowerCase()} — ${(bestFmt.avg / Math.max(leaned.avg, 1)).toFixed(1)}× the return.${mine}`);
+    }
+
+    const allLangs = groupStats(posts, LANGUAGES);
+    const langs = allLangs.filter((g) => g.n >= 3).sort((a, b) => b.avg - a.avg);
+    if (langs.length >= 2) {
+      const top = langs[0], bottom = langs[langs.length - 1];
+      // Share is of everything the client posted, not only of the groups big
+      // enough to compare — otherwise this disagrees with the panel above it.
+      const myTotal = allLangs.reduce((a, g) => a + g.myN, 0);
+      add("blue", `${top.label} posts earn the most in this market`,
+        `${top.label} averages ${nf.format(Math.round(top.avg))} interactions against ${nf.format(Math.round(bottom.avg))} for ${bottom.label.toLowerCase()} — ${(top.avg / Math.max(bottom.avg, 1)).toFixed(1)}× the return, across ${top.n} posts. ${CLIENT} writes ${myTotal ? pct(top.myN / myTotal) : "none"} of its posts that way.`);
     }
   }
   return out;
@@ -981,6 +1103,8 @@ function render() {
   renderStandings(agg);
   renderCharts(agg);
   renderTable(agg);
+  renderGroup("format-body", "format-note", groupStats(posts, FORMATS));
+  renderGroup("language-body", "language-note", groupStats(posts, LANGUAGES));
   renderThemes(posts);
   renderRecommendations(agg, posts, campaigns);
   renderTopPosts(posts);
