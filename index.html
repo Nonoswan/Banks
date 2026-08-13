@@ -152,6 +152,7 @@
   </div>
 
   <main id="dashboard" class="hidden">
+  <div id="view-data">
 
     <section id="campaign-panel" class="reveal hidden mb-5 bg-white border-l-4 border-amber-400 rounded-r-xl shadow-sm p-4 sm:p-5">
       <h3 class="font-bold text-slate-900 text-sm sm:text-base" id="campaign-headline"></h3>
@@ -314,6 +315,29 @@
       <div id="top-posts" class="space-y-2"></div>
     </section>
 
+    <footer class="text-xs text-slate-400 mt-6 mb-24 sm:mb-6 text-center px-2"><span id="footer-note"></span></footer>
+
+    <section class="reveal mt-6 rounded-2xl p-6 sm:p-8 text-center text-white hero">
+      <p class="text-xs uppercase tracking-widest opacity-60">That is where BBK stands</p>
+      <h3 class="text-lg sm:text-2xl font-bold mt-2">So what should the bank do about it?</h3>
+      <button id="btn-continue"
+        class="mt-6 inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-semibold bg-white text-slate-900 transition hover:brightness-95 active:scale-[.98]">
+        Continue
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </section>
+  </div>
+
+  <div id="view-next" class="hidden">
+    <button id="btn-back" class="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 transition">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline>
+      </svg>
+      Back to the figures
+    </button>
+
     <!-- Conclusions sit after the evidence, not before it. Recommendations read
          mid-page get judged before the figures behind them have been seen. -->
     <section class="reveal card bg-white p-4 sm:p-7 rounded-xl shadow-sm border border-slate-200 mt-5">
@@ -353,7 +377,7 @@
       <p class="text-white font-semibold mt-1">Naheed</p>
     </section>
 
-    <footer class="text-xs text-slate-400 mt-6 mb-24 sm:mb-6 text-center px-2"><span id="footer-note"></span></footer>
+  </div>
   </main>
 </div>
 
@@ -426,6 +450,11 @@ const hide = (id) => $(id).classList.add("hidden");
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let ALL_POSTS = [], PROFILES = [], CHARTS = [], organicOnly = true, LAST = null;
+
+// The conclusions rest on the organic baseline whatever the dashboard is
+// showing. Recomputing them per view would state the same argument twice on
+// two different bases, which is worse than picking one and saying which.
+let BASELINE = null;
 
 /** Counts a figure up from zero. Skipped entirely under reduced-motion. */
 function countUp(el, to, fmt, ms = 850) {
@@ -925,9 +954,14 @@ function recommendations({ rows }, posts, campaigns) {
   const add = (tone, metric, metricLabel, title, body) => out.push({ tone, metric, metricLabel, title, body });
 
   // The campaign caveat leads, because it reframes every number under it.
-  if (campaigns.length && organicOnly) {
+  //
+  // Whether campaigns were excluded is read from the data passed in, not from
+  // the page's view state: this runs for the fixed conclusions baseline as well
+  // as for whatever the dashboard happens to be showing.
+  const excluded = campaigns.length > 0 && !posts.some((p) => p._outlier);
+  if (excluded) {
     const c = campaigns[0];
-    const scope = organicOnly ? posts.concat(campaigns) : posts;
+    const scope = posts.concat(campaigns);
     const allEng = scope.reduce((acc, p) => acc + engOf(p), 0);
     const shareOfAll = allEng ? engOf(c) / allEng : 0;
     add("blue", pct(shareOfAll), "from one post", "These figures exclude a competition",
@@ -1265,7 +1299,10 @@ async function exportPptx() {
     // using "\n" silently produced an empty slide. And it does not reflow
     // overflow: six items with bodies simply drew past the bottom edge, so the
     // pagination is load-bearing rather than cosmetic.
-    const recs = recommendations(LAST.agg, LAST.posts, LAST.campaigns);
+    // From the baseline, not the current view, so the deck's conclusions match
+    // the ones on the page rather than shifting with whatever was on screen.
+    const src2 = BASELINE || LAST;
+    const recs = recommendations(src2.agg, src2.posts, src2.campaigns);
     const PER_SLIDE = 3;
     for (let i = 0; i < recs.length; i += PER_SLIDE) {
       const chunk = recs.slice(i, i + PER_SLIDE);
@@ -1311,8 +1348,10 @@ function render() {
   renderGroup("language", posts, LANGUAGES);
   renderGroup("purpose", posts, PURPOSE);
   renderThemes(posts);
-  renderRecommendations(agg, posts, campaigns);
   renderTopPosts(posts);
+  // Recommendations deliberately absent: they are rendered once from a fixed
+  // baseline in load(), so flipping the view does not restate the conclusions
+  // in two different forms.
 
   $("footer-note").textContent =
     `${nf.format(posts.length)} of ${nf.format(ALL_POSTS.length)} posts · ${agg.rows.length} banks · ` +
@@ -1357,10 +1396,28 @@ async function load() {
 
   show("dashboard");
   show("btn-export");
+
+  const organicPosts = ALL_POSTS.filter((p) => !p._outlier);
+  BASELINE = {
+    agg: aggregate(organicPosts, PROFILES),
+    posts: organicPosts,
+    campaigns: ALL_POSTS.filter((p) => p._outlier),
+  };
+
   $("btn-organic").onclick = () => { organicOnly = true; render(); };
   $("btn-all").onclick = () => { organicOnly = false; render(); };
   $("btn-export").onclick = exportPptx;
+
+  const swap = (from, to) => {
+    hide(from); show(to);
+    window.scrollTo({ top: 0, behavior: REDUCED ? "auto" : "smooth" });
+    armReveals();
+  };
+  $("btn-continue").onclick = () => swap("view-data", "view-next");
+  $("btn-back").onclick = () => swap("view-next", "view-data");
+
   render();
+  renderRecommendations(BASELINE.agg, BASELINE.posts, BASELINE.campaigns);
 }
 
 // sessionStorage throws on some file:// origins, so every access is guarded —
