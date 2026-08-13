@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BBK Competitor Intelligence — Share of Voice</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root { --bbk: #C8102E; }
+  body { font-feature-settings: "tnum"; }
+  .num { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+<div class="max-w-7xl mx-auto p-6">
+
+  <header class="mb-6 flex flex-wrap gap-4 justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+    <div>
+      <h1 class="text-2xl font-bold text-slate-900">BBK Competitor Intelligence</h1>
+      <p class="text-sm text-slate-500">Instagram share of voice · Bahrain retail banking</p>
+    </div>
+    <div class="text-right">
+      <span id="status-pill" class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">Connecting…</span>
+      <p id="status-detail" class="text-xs text-slate-400 mt-1"></p>
+    </div>
+  </header>
+
+  <!-- Honest empty / error state, shown instead of the dashboard when there is no data -->
+  <div id="empty-state" class="hidden bg-white border border-amber-300 rounded-xl p-8 shadow-sm">
+    <h2 class="text-lg font-bold text-slate-900 mb-2" id="empty-title">No data yet</h2>
+    <p class="text-sm text-slate-600 mb-4" id="empty-body"></p>
+    <ol class="text-sm text-slate-600 list-decimal ml-5 space-y-1">
+      <li>Run <code class="bg-slate-100 px-1 rounded">schema.sql</code> in the Supabase SQL editor.</li>
+      <li>Add <code class="bg-slate-100 px-1 rounded">APIFY_TOKEN</code> to GitHub → Settings → Secrets → Actions.</li>
+      <li>Trigger the <em>Run Instagram Scraper</em> workflow manually, and check it exits green.</li>
+      <li>Reload this page.</li>
+    </ol>
+  </div>
+
+  <main id="dashboard" class="hidden">
+
+    <!-- KPI row -->
+    <section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-t-4" style="border-top-color: var(--bbk)">
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide">BBK Engagement SoV</h3>
+        <p id="kpi-eng-sov" class="text-4xl font-bold num mt-2" style="color: var(--bbk)">—</p>
+        <p class="text-xs text-slate-400 mt-1">Share of all likes + comments</p>
+      </div>
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide">BBK Audience SoV</h3>
+        <p id="kpi-aud-sov" class="text-4xl font-bold text-slate-800 num mt-2">—</p>
+        <p class="text-xs text-slate-400 mt-1">Share of all followers</p>
+      </div>
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Performance Index</h3>
+        <p id="kpi-index" class="text-4xl font-bold num mt-2">—</p>
+        <p id="kpi-index-note" class="text-xs text-slate-400 mt-1">Engagement share ÷ audience share</p>
+      </div>
+      <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Engagement Tracked</h3>
+        <p id="kpi-total" class="text-4xl font-bold text-slate-800 num mt-2">—</p>
+        <p id="kpi-total-note" class="text-xs text-slate-400 mt-1"></p>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="font-bold text-slate-800 mb-1">Engagement Share of Voice</h3>
+        <p class="text-xs text-slate-400 mb-4">Total likes + comments across the tracked window</p>
+        <div class="h-72"><canvas id="chart-sov"></canvas></div>
+      </div>
+      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+        <h3 class="font-bold text-slate-800 mb-1">Engagement Rate per Follower</h3>
+        <p class="text-xs text-slate-400 mb-4">Avg engagement per post ÷ followers. Normalises for account size.</p>
+        <div class="h-72"><canvas id="chart-rate"></canvas></div>
+      </div>
+    </section>
+
+    <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+      <h3 class="font-bold text-slate-800 mb-1">Share of Voice vs Share of Audience</h3>
+      <p class="text-xs text-slate-400 mb-4">Bars above their audience line are earning more attention than their size implies.</p>
+      <div class="h-80"><canvas id="chart-gap"></canvas></div>
+    </section>
+
+    <!-- Recommendations -->
+    <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+      <h3 class="font-bold text-slate-800 mb-1">What To Do Next</h3>
+      <p class="text-xs text-slate-400 mb-4">Generated from the data above. Each point states the figure it rests on.</p>
+      <div id="recommendations" class="space-y-3"></div>
+    </section>
+
+    <!-- Table -->
+    <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+      <h3 class="font-bold text-slate-800 mb-4">Full Breakdown</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="border-b-2 border-slate-200 text-xs font-semibold text-slate-500 uppercase">
+              <th class="py-3 px-3">Bank</th>
+              <th class="py-3 px-3 text-right">Followers</th>
+              <th class="py-3 px-3 text-right">Posts</th>
+              <th class="py-3 px-3 text-right">Total Eng.</th>
+              <th class="py-3 px-3 text-right">Avg / Post</th>
+              <th class="py-3 px-3 text-right">Eng. Rate</th>
+              <th class="py-3 px-3 text-right">Eng. SoV</th>
+            </tr>
+          </thead>
+          <tbody id="table-body" class="text-slate-700"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Top posts -->
+    <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+      <h3 class="font-bold text-slate-800 mb-1">Highest-Engagement Posts in Market</h3>
+      <p class="text-xs text-slate-400 mb-4">What is actually working right now, whoever posted it.</p>
+      <div id="top-posts" class="space-y-2"></div>
+    </section>
+
+    <footer class="text-xs text-slate-400 mt-6 text-center">
+      <span id="footer-note"></span>
+    </footer>
+  </main>
+</div>
+
+<script>
+const SUPABASE_URL = "https://kbcdgleigtjmhzfhkdvp.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_JFGvztc25SDhuft7UJMJEg_I2_O4_3M";
+const CLIENT = "BBK";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Distinct hues; BBK always renders in its brand red so it reads instantly.
+const BBK_RED = "#C8102E";
+const PALETTE = ["#1E4E79", "#2E8B8B", "#B07C2A", "#6A5ACD", "#3F7D3F", "#8A6F5C"];
+
+const nf = new Intl.NumberFormat("en-BH");
+const pct = (n) => (n * 100).toFixed(1) + "%";
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function show(el) { document.getElementById(el).classList.remove("hidden"); }
+function hide(el) { document.getElementById(el).classList.add("hidden"); }
+
+function setStatus(text, tone, detail) {
+  const pill = document.getElementById("status-pill");
+  const tones = {
+    live: "bg-emerald-50 text-emerald-700",
+    warn: "bg-amber-50 text-amber-700",
+    error: "bg-red-50 text-red-700",
+  };
+  pill.className = "inline-block px-3 py-1 rounded-full text-xs font-semibold " + (tones[tone] || tones.warn);
+  pill.textContent = text;
+  document.getElementById("status-detail").textContent = detail || "";
+}
+
+function failTo(title, body) {
+  document.getElementById("empty-title").textContent = title;
+  document.getElementById("empty-body").textContent = body;
+  show("empty-state");
+  hide("dashboard");
+}
+
+/** Fold posts + profile snapshots into one row per bank. */
+function aggregate(posts, profiles) {
+  const byBank = new Map();
+
+  for (const p of posts) {
+    const name = p.bank_name;
+    if (!name) continue;
+    if (!byBank.has(name)) {
+      byBank.set(name, { bank: name, handle: p.bank_handle, posts: 0, engagement: 0, followers: 0, reels: 0 });
+    }
+    const row = byBank.get(name);
+    row.posts += 1;
+    row.engagement += (p.likes_count || 0) + (p.comments_count || 0);
+    if ((p.post_type || "").toLowerCase() === "video") row.reels += 1;
+  }
+
+  for (const prof of profiles) {
+    const row = byBank.get(prof.bank_name);
+    if (row) row.followers = prof.followers_count || 0;
+  }
+
+  const totalEng = [...byBank.values()].reduce((a, r) => a + r.engagement, 0);
+  const totalFol = [...byBank.values()].reduce((a, r) => a + r.followers, 0);
+
+  for (const row of byBank.values()) {
+    row.avgPerPost = row.posts ? row.engagement / row.posts : 0;
+    // Engagement rate is undefined without followers — keep it null rather
+    // than showing 0%, which would read as "terrible" instead of "unknown".
+    row.engRate = row.followers > 0 ? row.avgPerPost / row.followers : null;
+    row.engSoV = totalEng > 0 ? row.engagement / totalEng : 0;
+    row.audSoV = totalFol > 0 ? row.followers / totalFol : null;
+    row.reelShare = row.posts ? row.reels / row.posts : 0;
+  }
+
+  return {
+    rows: [...byBank.values()].sort((a, b) => b.engagement - a.engagement),
+    totalEng,
+    totalFol,
+  };
+}
+
+function renderKpis({ rows, totalEng, totalFol }, postCount) {
+  const bbk = rows.find((r) => r.bank === CLIENT);
+  document.getElementById("kpi-total").textContent = nf.format(totalEng);
+  document.getElementById("kpi-total-note").textContent =
+    `across ${nf.format(postCount)} posts · ${rows.length} banks`;
+
+  if (!bbk) {
+    document.getElementById("kpi-eng-sov").textContent = "n/a";
+    document.getElementById("kpi-aud-sov").textContent = "n/a";
+    document.getElementById("kpi-index").textContent = "n/a";
+    document.getElementById("kpi-index-note").textContent = `No rows for ${CLIENT}`;
+    return;
+  }
+
+  document.getElementById("kpi-eng-sov").textContent = pct(bbk.engSoV);
+  document.getElementById("kpi-aud-sov").textContent = bbk.audSoV === null ? "n/a" : pct(bbk.audSoV);
+
+  const idxEl = document.getElementById("kpi-index");
+  if (bbk.audSoV) {
+    const index = bbk.engSoV / bbk.audSoV;
+    idxEl.textContent = index.toFixed(2) + "×";
+    idxEl.className = "text-4xl font-bold num mt-2 " + (index >= 1 ? "text-emerald-600" : "text-red-600");
+    document.getElementById("kpi-index-note").textContent =
+      index >= 1 ? "Punching above its audience size" : "Under-earning relative to its size";
+  } else {
+    idxEl.textContent = "n/a";
+    document.getElementById("kpi-index-note").textContent = "Needs follower data";
+  }
+}
+
+function colourFor(row, i) {
+  return row.bank === CLIENT ? BBK_RED : PALETTE[i % PALETTE.length];
+}
+
+function renderCharts({ rows }) {
+  const labels = rows.map((r) => r.bank);
+  const colours = rows.map(colourFor);
+
+  new Chart(document.getElementById("chart-sov"), {
+    type: "doughnut",
+    data: { labels, datasets: [{ data: rows.map((r) => r.engagement), backgroundColor: colours, borderWidth: 2, borderColor: "#fff" }] },
+    options: {
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: "right", labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: (c) => `${c.label}: ${nf.format(c.raw)} (${pct(rows[c.dataIndex].engSoV)})` } },
+      },
+    },
+  });
+
+  const rated = rows.filter((r) => r.engRate !== null).sort((a, b) => b.engRate - a.engRate);
+  new Chart(document.getElementById("chart-rate"), {
+    type: "bar",
+    data: {
+      labels: rated.map((r) => r.bank),
+      datasets: [{ label: "Engagement rate", data: rated.map((r) => r.engRate * 100), backgroundColor: rated.map(colourFor) }],
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.raw.toFixed(3) + "% of followers engage per post" } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: (v) => v.toFixed(2) + "%" } } },
+    },
+  });
+
+  new Chart(document.getElementById("chart-gap"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        { label: "Engagement SoV", data: rows.map((r) => r.engSoV * 100), backgroundColor: colours },
+        { label: "Audience SoV", data: rows.map((r) => (r.audSoV || 0) * 100), type: "line", borderColor: "#475569", backgroundColor: "#475569", borderDash: [6, 4], pointRadius: 4, fill: false },
+      ],
+    },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.raw.toFixed(1)}%` } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: (v) => v + "%" } } },
+    },
+  });
+}
+
+function renderTable({ rows }) {
+  document.getElementById("table-body").innerHTML = rows.map((r) => {
+    const isClient = r.bank === CLIENT;
+    return `<tr class="border-b border-slate-100 ${isClient ? "bg-red-50 font-semibold" : ""}">
+      <td class="py-3 px-3">
+        <span class="inline-block w-2 h-2 rounded-full mr-2" style="background:${isClient ? BBK_RED : "#94a3b8"}"></span>
+        ${esc(r.bank)}<span class="text-slate-400 font-normal text-xs ml-1">@${esc(r.handle)}</span>
+      </td>
+      <td class="py-3 px-3 text-right num">${r.followers ? nf.format(r.followers) : "<span class='text-slate-300'>—</span>"}</td>
+      <td class="py-3 px-3 text-right num">${nf.format(r.posts)}</td>
+      <td class="py-3 px-3 text-right num">${nf.format(r.engagement)}</td>
+      <td class="py-3 px-3 text-right num">${nf.format(Math.round(r.avgPerPost))}</td>
+      <td class="py-3 px-3 text-right num">${r.engRate === null ? "<span class='text-slate-300'>—</span>" : (r.engRate * 100).toFixed(3) + "%"}</td>
+      <td class="py-3 px-3 text-right num">${pct(r.engSoV)}</td>
+    </tr>`;
+  }).join("");
+}
+
+function renderTopPosts(posts) {
+  const top = [...posts]
+    .map((p) => ({ ...p, eng: (p.likes_count || 0) + (p.comments_count || 0) }))
+    .sort((a, b) => b.eng - a.eng)
+    .slice(0, 5);
+
+  document.getElementById("top-posts").innerHTML = top.map((p, i) => `
+    <div class="flex gap-3 items-start p-3 rounded-lg border border-slate-100 ${p.bank_name === CLIENT ? "bg-red-50" : "bg-slate-50"}">
+      <span class="text-slate-300 font-bold text-lg num">${i + 1}</span>
+      <div class="flex-1 min-w-0">
+        <div class="flex justify-between gap-3">
+          <span class="font-semibold text-sm">${esc(p.bank_name)}</span>
+          <span class="text-sm font-bold num whitespace-nowrap">${nf.format(p.eng)} eng.</span>
+        </div>
+        <p class="text-xs text-slate-500 mt-1 line-clamp-2">${esc((p.caption || "").slice(0, 160)) || "<em>no caption</em>"}</p>
+        <a href="${esc(p.post_url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 hover:underline">View post →</a>
+      </div>
+    </div>`).join("");
+}
+
+/** Rule-based advice. Every line cites the number it came from. */
+function renderRecommendations({ rows }, posts) {
+  const bbk = rows.find((r) => r.bank === CLIENT);
+  const out = [];
+  const add = (tone, title, body) => out.push({ tone, title, body });
+
+  if (!bbk) {
+    add("red", `No ${CLIENT} data`, `Nothing was collected for ${CLIENT}. Verify the Instagram handle in scraper.py before reading anything else on this page.`);
+  } else {
+    const leader = rows[0];
+    if (leader.bank !== CLIENT) {
+      add("red", `${esc(leader.bank)} leads engagement share`,
+        `${leader.bank} holds ${pct(leader.engSoV)} of market engagement against ${CLIENT}'s ${pct(bbk.engSoV)} — a gap of ${pct(leader.engSoV - bbk.engSoV)}. Closing it is the single clearest objective for the next quarter.`);
+    } else {
+      add("green", `${CLIENT} leads engagement share`,
+        `${CLIENT} holds ${pct(bbk.engSoV)} of all engagement, ahead of ${esc(rows[1]?.bank || "the field")}. The task is defending it, not chasing.`);
+    }
+
+    if (bbk.audSoV) {
+      const index = bbk.engSoV / bbk.audSoV;
+      if (index < 0.9) {
+        add("red", "Audience is larger than its output",
+          `${CLIENT} holds ${pct(bbk.audSoV)} of followers but earns only ${pct(bbk.engSoV)} of engagement — an index of ${index.toFixed(2)}×. The reach already exists; the content is not converting it. This is a creative problem, not a media-spend problem.`);
+      } else if (index > 1.1) {
+        add("green", "Content out-performs audience size",
+          `${CLIENT} earns ${pct(bbk.engSoV)} of engagement from ${pct(bbk.audSoV)} of followers — an index of ${index.toFixed(2)}×. The creative is working; the constraint is reach. Growth spend is justified here.`);
+      }
+    }
+
+    const rated = rows.filter((r) => r.engRate !== null);
+    const best = rated.slice().sort((a, b) => b.engRate - a.engRate)[0];
+    if (best && bbk.engRate !== null && best.bank !== CLIENT) {
+      const mult = bbk.engRate > 0 ? best.engRate / bbk.engRate : null;
+      add("amber", `${esc(best.bank)} has the strongest engagement rate`,
+        `At ${(best.engRate * 100).toFixed(3)}% per follower versus ${CLIENT}'s ${(bbk.engRate * 100).toFixed(3)}%${mult ? ` — ${mult.toFixed(1)}× stronger` : ""}. Audit their last ten posts for format and hook before the next content sprint.`);
+    }
+
+    const marketReel = rows.reduce((a, r) => a + r.reels, 0) / Math.max(1, rows.reduce((a, r) => a + r.posts, 0));
+    if (bbk.reelShare < marketReel - 0.1) {
+      add("amber", "Under-indexed on video",
+        `${pct(bbk.reelShare)} of ${CLIENT}'s tracked posts are video, against a market average of ${pct(marketReel)}. Video is the format Instagram's ranking currently favours; shifting the mix is the cheapest available lever.`);
+    }
+  }
+
+  const topPost = [...posts].sort((a, b) =>
+    ((b.likes_count || 0) + (b.comments_count || 0)) - ((a.likes_count || 0) + (a.comments_count || 0)))[0];
+  if (topPost) {
+    add("blue", `Top-performing post in market: ${esc(topPost.bank_name)}`,
+      `${nf.format((topPost.likes_count || 0) + (topPost.comments_count || 0))} interactions. Worth dissecting in the next content review — it is the clearest evidence of what this audience responds to.`);
+  }
+
+  const tones = {
+    red: "border-red-400 bg-red-50", amber: "border-amber-400 bg-amber-50",
+    green: "border-emerald-400 bg-emerald-50", blue: "border-blue-400 bg-blue-50",
+  };
+  document.getElementById("recommendations").innerHTML = out.map((r) => `
+    <div class="border-l-4 ${tones[r.tone]} p-4 rounded-r-lg">
+      <h4 class="font-bold text-sm text-slate-900">${r.title}</h4>
+      <p class="text-sm text-slate-600 mt-1">${r.body}</p>
+    </div>`).join("");
+}
+
+async function load() {
+  const [postsRes, profilesRes] = await Promise.all([
+    db.from("bank_posts").select("*").order("posted_at", { ascending: false }),
+    db.from("latest_bank_profiles").select("*"),
+  ]);
+
+  if (postsRes.error) {
+    setStatus("Connection failed", "error");
+    failTo("Could not read bank_posts", `${postsRes.error.message} (code ${postsRes.error.code || "?"}). If this says the table is missing, schema.sql has not been run. If it mentions permission, row-level security is blocking the anon key.`);
+    return;
+  }
+
+  const posts = postsRes.data || [];
+  // A missing view is survivable — we lose follower metrics, not the whole page.
+  const profiles = profilesRes.error ? [] : (profilesRes.data || []);
+
+  if (posts.length === 0) {
+    setStatus("No data", "warn", "bank_posts is empty");
+    failTo("The database is connected but empty",
+      "bank_posts exists and is readable, but contains zero rows — the scraper has not yet written anything. This is expected until the Apify collector has run successfully at least once.");
+    return;
+  }
+
+  const agg = aggregate(posts, profiles);
+
+  if (profiles.length === 0) {
+    setStatus("Partial data", "warn", "No follower snapshots — audience metrics unavailable");
+  } else {
+    const latest = profiles.map((p) => p.scraped_at).sort().pop();
+    setStatus("Live", "live", "Updated " + new Date(latest).toLocaleString("en-GB", {
+      timeZone: "Asia/Bahrain", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+    }));
+  }
+
+  show("dashboard");
+  renderKpis(agg, posts.length);
+  renderCharts(agg);
+  renderTable(agg);
+  renderRecommendations(agg, posts);
+  renderTopPosts(posts);
+
+  document.getElementById("footer-note").textContent =
+    `${nf.format(posts.length)} posts across ${agg.rows.length} banks · engagement = likes + comments · times shown in Asia/Bahrain`;
+}
+
+load().catch((e) => {
+  console.error(e);
+  setStatus("Error", "error");
+  failTo("Unexpected error", e.message || String(e));
+});
+</script>
+</body>
+</html>

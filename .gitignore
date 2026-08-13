@@ -1,0 +1,12 @@
+# Local editor/tooling config — contains machine-specific absolute paths
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
