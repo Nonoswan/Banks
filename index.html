@@ -75,7 +75,7 @@
         </svg>
       </div>
       <h1 class="text-white text-xl sm:text-2xl font-bold">BBK Competitor Intelligence</h1>
-      <p class="text-slate-400 text-sm mt-2 mb-7">Prepared for Mohammed Al Aali</p>
+      <p class="text-slate-400 text-sm mt-2 mb-7">Prepared for Mohamed K. Alaali</p>
       <form id="gate-form" class="space-y-3">
         <input id="gate-input" type="password" autocomplete="off" placeholder="Access code"
           class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-500
@@ -88,14 +88,17 @@
 
     <div id="gate-note" class="hidden w-full max-w-2xl">
       <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-10">
-        <p class="text-slate-900 text-lg sm:text-xl font-bold mb-5">Dear Mohammed,</p>
+        <p class="text-slate-900 text-lg sm:text-xl font-bold mb-5">Dear Mohamed,</p>
         <div class="space-y-4 text-slate-700 text-sm sm:text-base leading-relaxed">
-          <p>What you've built at BBK since joining speaks for itself. It just isn't showing up yet
-             where the market can see it.</p>
+          <p>What you've been driving at BBK since joining speaks for itself. It isn't yet showing
+             up where the market forms its view of the bank.</p>
           <p>I tracked BBK against five competitors on Instagram across their most recent posts.
-             BBK holds the second-largest audience in Bahrain retail banking, and earns less
-             engagement than an account that size should. That gap is the opportunity — and it
-             reads as a content problem, not a budget one.</p>
+             BBK holds the second-largest audience in Bahrain retail banking but captures a smaller
+             share of the market's attention than that position warrants. The gap is one of
+             positioning rather than spending — and it is measurable.</p>
+          <p>One finding sits close to your remit: community and purpose-led content is the
+             strongest-performing theme in this market by a clear margin, and it is the one BBK
+             uses least.</p>
           <p>What follows is a short, honest read on where BBK stands against the field, and what
              the others are doing differently. I hope it's useful as the bank considers its next
              chapter.</p>
@@ -218,24 +221,31 @@
     </section>
 
     <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
-      <h3 class="font-bold text-slate-800 text-sm sm:text-base">What To Do Next</h3>
-      <p class="text-xs text-slate-400 mb-4">Generated from the data above. Each point states the figure it rests on.</p>
-      <div id="recommendations" class="space-y-3"></div>
+      <h3 class="font-bold text-slate-800 text-sm sm:text-base">Format</h3>
+      <p class="text-xs text-slate-400 mb-5">Average engagement per post by type, every bank</p>
+      <div id="format-body" class="space-y-3.5 mb-7"></div>
+      <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+          <thead id="format-head"></thead>
+          <tbody id="format-table" class="text-slate-700"></tbody>
+        </table>
+      </div>
+      <p id="format-note" class="text-xs sm:text-sm text-slate-700 mt-6 leading-relaxed border-l-4 pl-4"
+        style="border-color: var(--bbk)"></p>
     </section>
 
-    <section class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-5">
-      <div class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
-        <h3 class="font-bold text-slate-800 text-sm sm:text-base">Format</h3>
-        <p class="text-xs text-slate-400 mb-5">Average engagement per post by type, across the market</p>
-        <div id="format-body" class="space-y-3.5"></div>
-        <p id="format-note" class="text-xs text-slate-600 mt-5 leading-relaxed"></p>
+    <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
+      <h3 class="font-bold text-slate-800 text-sm sm:text-base">Language</h3>
+      <p class="text-xs text-slate-400 mb-5">By share of Arabic against Latin characters in the caption, every bank</p>
+      <div id="language-body" class="space-y-3.5 mb-7"></div>
+      <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+          <thead id="language-head"></thead>
+          <tbody id="language-table" class="text-slate-700"></tbody>
+        </table>
       </div>
-      <div class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200">
-        <h3 class="font-bold text-slate-800 text-sm sm:text-base">Language</h3>
-        <p class="text-xs text-slate-400 mb-5">By share of Arabic against Latin characters in the caption</p>
-        <div id="language-body" class="space-y-3.5"></div>
-        <p id="language-note" class="text-xs text-slate-600 mt-5 leading-relaxed"></p>
-      </div>
+      <p id="language-note" class="text-xs sm:text-sm text-slate-700 mt-6 leading-relaxed border-l-4 pl-4"
+        style="border-color: var(--bbk)"></p>
     </section>
 
     <section class="reveal card bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-200 mb-5">
@@ -284,6 +294,15 @@
       <h3 class="font-bold text-slate-800 text-sm sm:text-base">Highest-Engagement Posts in Market</h3>
       <p class="text-xs text-slate-400 mb-4">What is actually working right now, whoever posted it.</p>
       <div id="top-posts" class="space-y-2"></div>
+    </section>
+
+    <!-- Conclusions sit after the evidence, not before it. Recommendations read
+         mid-page get judged before the figures behind them have been seen. -->
+    <section class="reveal card bg-white p-4 sm:p-7 rounded-xl shadow-sm border border-slate-200 mt-5">
+      <h3 class="font-bold text-slate-800 text-base sm:text-xl">What To Do Next</h3>
+      <p class="text-xs text-slate-400 mb-6">Every point carries the figure it rests on.</p>
+      <div id="rec-summary" class="mb-6"></div>
+      <div id="recommendations" class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4"></div>
     </section>
 
     <!-- Closing note. Deliberately after the evidence rather than in the opening
@@ -626,6 +645,7 @@ const LATIN_RE = /[A-Za-z]/g;
 const FORMATS = {
   order: ["video", "sidecar", "image"],
   labels: { video: "Video / Reels", sidecar: "Carousel", image: "Single image" },
+  short: { video: "video", sidecar: "carousel", image: "image" },
   of: (p) => {
     const t = (p.post_type || "").toLowerCase();
     return ["video", "sidecar", "image"].includes(t) ? t : "other";
@@ -635,6 +655,7 @@ const FORMATS = {
 const LANGUAGES = {
   order: ["arabic", "bilingual", "english"],
   labels: { arabic: "Arabic-led", bilingual: "Balanced bilingual", english: "English-led" },
+  short: { arabic: "Arabic", bilingual: "bilingual", english: "English" },
   // Decided by the proportion of Arabic to Latin characters, not by presence.
   // Nearly every Arabic caption here contains Latin characters, because product
   // names, app names and hashtags stay in English — testing for presence alone
@@ -658,11 +679,24 @@ function groupStats(posts, spec) {
   }).filter((g) => g.n > 0);
 }
 
-/** Shared renderer for the format and language panels. */
-function renderGroup(bodyId, noteId, groups, minForClaim = 3) {
+const ordinal = (n) => {
+  const suffix = ["th", "st", "nd", "rd"], v = n % 100;
+  return n + (suffix[(v - 20) % 10] || suffix[v] || suffix[0]);
+};
+
+/**
+ * Renders one dimension (format, language) three ways: market averages as bars,
+ * every bank as a matrix, and a written conclusion. The matrix is the point —
+ * a market average alone tells the client nothing about who is beating them.
+ */
+function renderGroup(prefix, posts, spec, minForClaim = 3) {
+  const groups = groupStats(posts, spec);
+  if (!groups.length) return;
+  const mean = (l) => (l.length ? l.reduce((acc, p) => acc + engOf(p), 0) / l.length : null);
   const max = Math.max(...groups.map((g) => g.avg), 1);
 
-  $(bodyId).innerHTML = groups.map((g, i) => `
+  // --- market averages, as bars ---
+  $(prefix + "-body").innerHTML = groups.map((g, i) => `
     <div>
       <div class="flex justify-between items-baseline gap-2 mb-1.5">
         <span class="text-xs sm:text-sm font-semibold text-slate-700">${esc(g.label)}
@@ -672,27 +706,77 @@ function renderGroup(bodyId, noteId, groups, minForClaim = 3) {
       <div class="h-2.5 rounded-full bg-slate-100 overflow-hidden">
         <div class="bar" data-w="${((g.avg / max) * 100).toFixed(1)}" style="background:${PALETTE[i % PALETTE.length]}"></div>
       </div>
-      <p class="text-[11px] text-slate-400 mt-1 num">${CLIENT}: ${g.myN ? nf.format(Math.round(g.myAvg)) + " avg across " + g.myN : "none in this window"}</p>
     </div>`).join("");
 
   requestAnimationFrame(() => {
-    $(bodyId).querySelectorAll(".bar").forEach((bar, i) => {
+    $(prefix + "-body").querySelectorAll(".bar").forEach((bar, i) => {
       setTimeout(() => { bar.style.width = bar.dataset.w + "%"; }, REDUCED ? 0 : i * 90);
     });
   });
 
-  // Only compare groups with enough posts behind them to be worth a sentence.
-  const solid = groups.filter((g) => g.n >= minForClaim).sort((a, b) => b.avg - a.avg);
+  // --- every bank, as a matrix ---
+  const cell = (bank, key) => {
+    const list = posts.filter((p) => p.bank_name === bank && spec.of(p) === key);
+    return { n: list.length, avg: mean(list) };
+  };
+  const overall = {};
+  for (const p of posts) (overall[p.bank_name] ||= []).push(p);
+  const banks = Object.keys(overall).sort((x, y) => mean(overall[y]) - mean(overall[x]));
+
+  $(prefix + "-head").innerHTML = `<tr class="border-b-2 border-slate-200 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase">
+      <th class="py-3 px-2 sm:px-3">Bank</th>
+      ${groups.map((g) => `<th class="py-3 px-2 sm:px-3 text-right">${esc(g.label)}</th>`).join("")}
+    </tr>`;
+
+  $(prefix + "-table").innerHTML = banks.map((bank) => {
+    const isClient = bank === CLIENT;
+    const cells = groups.map((g) => cell(bank, g.key));
+    // Highlight each bank's own best, but only where it rests on 2+ posts.
+    let bestIdx = -1, bestVal = -1;
+    cells.forEach((c, i) => { if (c.n >= 2 && c.avg > bestVal) { bestVal = c.avg; bestIdx = i; } });
+    return `<tr class="border-b border-slate-100 ${isClient ? "bg-blue-50 font-semibold" : ""}">
+      <td class="py-2.5 px-2 sm:px-3 whitespace-nowrap">${esc(bank)}</td>
+      ${cells.map((c, i) => `<td class="py-2.5 px-2 sm:px-3 text-right num ${i === bestIdx ? "text-emerald-700 font-bold" : ""}">${
+        c.avg === null
+          ? "<span class='text-slate-300'>—</span>"
+          : nf.format(Math.round(c.avg)) + `<span class="text-slate-400 font-normal text-[10px] ml-1">·${c.n}</span>`
+      }</td>`).join("")}
+    </tr>`;
+  }).join("");
+
+  // --- conclusion ---
+  const solid = groups.filter((g) => g.n >= minForClaim).sort((a2, b2) => b2.avg - a2.avg);
   if (solid.length < 2) {
-    $(noteId).textContent = "Too few posts in this window to compare these reliably.";
+    $(prefix + "-note").textContent = "Too few posts in this window to compare these reliably.";
     return;
   }
-  const top = solid[0], bottom = solid[solid.length - 1];
-  const myTotal = groups.reduce((a, g) => a + g.myN, 0);
-  let note = `${top.label} earns ${(top.avg / Math.max(bottom.avg, 1)).toFixed(1)}× what ${bottom.label.toLowerCase()} does across the market.`;
-  if (!top.myN) note += ` ${CLIENT} ran none in this window.`;
-  else if (myTotal && top.myN / myTotal < 0.34) note += ` ${CLIENT} uses it for ${pct(top.myN / myTotal)} of its posts.`;
-  $(noteId).textContent = note;
+  const best = solid[0], worst = solid[solid.length - 1];
+
+  // How many banks independently agree, rather than the market average alone —
+  // one dominant account could otherwise carry the whole conclusion.
+  let agree = 0, counted = 0;
+  for (const bank of banks) {
+    const per = groups.map((g) => ({ key: g.key, ...cell(bank, g.key) })).filter((c) => c.n >= 2);
+    if (per.length < 2) continue;
+    counted++;
+    per.sort((x, y) => y.avg - x.avg);
+    if (per[0].key === best.key) agree++;
+  }
+
+  const shareOf = (bank, key) => (overall[bank].length ? cell(bank, key).n / overall[bank].length : 0);
+  const ranked = banks.map((bank) => ({ bank, share: shareOf(bank, worst.key) })).sort((x, y) => y.share - x.share);
+  const pos = ranked.findIndex((r) => r.bank === CLIENT);
+
+  let note = `${best.label} earns ${(best.avg / Math.max(worst.avg, 1)).toFixed(1)}× what ${worst.label.toLowerCase()} does across the market`;
+  note += counted >= 2
+    ? `, and is the strongest for ${agree} of the ${counted} banks with enough posts to judge.`
+    : ".";
+  if (pos === 0) {
+    note += ` ${CLIENT} runs ${worst.label.toLowerCase()} for ${pct(ranked[0].share)} of its posts — a higher share than any other bank here.`;
+  } else if (pos > -1) {
+    note += ` ${CLIENT} runs ${worst.label.toLowerCase()} for ${pct(ranked[pos].share)} of its posts, the ${ordinal(pos + 1)} highest share of ${ranked.length}.`;
+  }
+  $(prefix + "-note").textContent = note;
 }
 
 function initScrollProgress() {
@@ -767,117 +851,149 @@ function renderThemes(posts) {
   $("theme-callout").innerHTML = html;
 }
 
+/**
+ * Written for a Chief Strategy Officer, not a marketing team: competitive
+ * position, where the gap is, and what it would take to close it. No craft
+ * jargon — "hooks" and "content sprints" mean nothing at that desk.
+ *
+ * Each point carries a single headline figure, because the card layout leads
+ * with it and a recommendation that cannot name its number is not evidence.
+ */
 function recommendations({ rows }, posts, campaigns) {
   const bbk = rows.find((r) => r.bank === CLIENT);
   const out = [];
-  const add = (tone, title, body) => out.push({ tone, title, body });
+  const add = (tone, metric, metricLabel, title, body) => out.push({ tone, metric, metricLabel, title, body });
 
   // The campaign caveat leads, because it reframes every number under it.
   if (campaigns.length && organicOnly) {
     const c = campaigns[0];
-    add("blue", "Figures exclude a competition post",
-      `${c.bank_name} ran a giveaway earning ${nf.format(engOf(c))} interactions — ${nf.format(c.comments_count || 0)} of them comments. Left in, it alone would take most of the market's engagement and make every other comparison meaningless. These figures show typical output instead.`);
+    const scope = organicOnly ? posts.concat(campaigns) : posts;
+    const allEng = scope.reduce((acc, p) => acc + engOf(p), 0);
+    const shareOfAll = allEng ? engOf(c) / allEng : 0;
+    add("blue", pct(shareOfAll), "from one post", "These figures exclude a competition",
+      `${c.bank_name} ran a prize giveaway earning ${nf.format(engOf(c))} interactions, ${nf.format(c.comments_count || 0)} of them comments. Left in, that single post would account for most of the market's engagement and make every comparison below it meaningless. What follows is typical output.`);
   } else if (campaigns.length) {
-    add("amber", "A single competition dominates these figures",
-      `${campaigns[0].bank_name}'s giveaway accounts for ${pct(engOf(campaigns[0]) / rows.reduce((a, r) => a + r.engagement, 0))} of all tracked engagement. Treat this as evidence of what a competition can do, not a read on sustained performance.`);
+    add("amber", pct(engOf(campaigns[0]) / rows.reduce((acc, r) => acc + r.engagement, 0)), "from one post",
+      "A single competition dominates this view",
+      `${campaigns[0].bank_name}'s giveaway carries most of the tracked engagement. Read this as evidence of what a competition can do, not as a measure of sustained performance.`);
   }
 
   if (!bbk) {
-    add("red", `No ${CLIENT} data`, `Nothing was collected for ${CLIENT}. Verify the handle in scraper.py before reading anything else here.`);
+    add("red", "—", "no data", `No ${CLIENT} data`, `Nothing was collected for ${CLIENT}. Verify the handle before reading anything else here.`);
+    return out;
+  }
+
+  const pos = rows.indexOf(bbk);
+  const leader = rows[0];
+  if (leader.bank !== CLIENT) {
+    add("red", pct(leader.engSoV - bbk.engSoV), "behind the leader",
+      `${leader.bank} leads share of attention`,
+      `${leader.bank} holds ${pct(leader.engSoV)} of the market's engagement against ${CLIENT}'s ${pct(bbk.engSoV)}. ${CLIENT} sits ${ordinal(pos + 1)} of ${rows.length} on the measure that reflects how much of the conversation the bank actually owns.`);
   } else {
-    const leader = rows[0], pos = rows.indexOf(bbk);
-    if (leader.bank !== CLIENT) {
-      add("red", `${leader.bank} leads engagement share`,
-        `${leader.bank} holds ${pct(leader.engSoV)} against ${CLIENT}'s ${pct(bbk.engSoV)} — a gap of ${pct(leader.engSoV - bbk.engSoV)}. ${CLIENT} sits ${pos + 1}${["st", "nd", "rd"][pos] || "th"} of ${rows.length}.`);
-    } else {
-      add("green", `${CLIENT} leads engagement share`,
-        `${CLIENT} holds ${pct(bbk.engSoV)} of all engagement, ahead of ${rows[1]?.bank || "the field"}. The task is defending it, not chasing.`);
-    }
+    add("green", pct(bbk.engSoV), "share of attention", `${CLIENT} leads share of attention`,
+      `${CLIENT} holds ${pct(bbk.engSoV)} of all engagement, ahead of ${rows[1] ? rows[1].bank : "the field"}. The task is defending the position rather than closing a gap.`);
+  }
 
-    if (bbk.audSoV) {
-      const index = bbk.engSoV / bbk.audSoV;
-      if (index < 0.9) {
-        add("red", "Audience is larger than its output",
-          `${CLIENT} holds ${pct(bbk.audSoV)} of followers but earns only ${pct(bbk.engSoV)} of engagement — an index of ${index.toFixed(2)}×. The reach already exists and is not converting. That is a creative problem, not a media-spend problem.`);
-      } else if (index > 1.1) {
-        add("green", "Content out-performs audience size",
-          `${CLIENT} earns ${pct(bbk.engSoV)} of engagement from ${pct(bbk.audSoV)} of followers — an index of ${index.toFixed(2)}×. The creative works; reach is the constraint.`);
-      }
-    }
-
-    const rated = rows.filter((r) => r.engRate !== null).sort((a, b) => b.engRate - a.engRate);
-    const best = rated[0];
-    if (best && bbk.engRate !== null && best.bank !== CLIENT) {
-      const mult = bbk.engRate > 0 ? best.engRate / bbk.engRate : null;
-      add("amber", `${best.bank} has the strongest engagement rate`,
-        `${(best.engRate * 100).toFixed(3)}% per follower against ${CLIENT}'s ${(bbk.engRate * 100).toFixed(3)}%${mult ? ` — ${mult.toFixed(1)}× stronger` : ""}. Audit their recent posts for format and hook before the next content sprint.`);
-    }
-
-    // Theme comparison against the market, which is where the sharper finding
-    // sits: BBK's most-used theme is also the one it runs below market standard.
-    const { rows: tRows } = themeRows(posts);
-    const heavy = tRows.filter((r) => r.cN >= 2).sort((a, b) => b.cN - a.cN)[0];
-    if (heavy && heavy.mAvg && heavy.cAvg < heavy.mAvg * 0.9) {
-      add("red", `${CLIENT}'s most-used theme runs below market standard`,
-        `${heavy.cN} of ${CLIENT}'s posts are ${heavy.label.toLowerCase()}, averaging ${nf.format(Math.round(heavy.cAvg))} against the market's ${nf.format(Math.round(heavy.mAvg))} on the same theme. The format is not the problem — the execution is.`);
-    }
-    const under = tRows.filter((r) => r.cN <= 1 && r.mAvg && r.mN >= 4).sort((a, b) => b.mAvg - a.mAvg)[0];
-    if (under) {
-      add("blue", `Under-used and out-performing: ${under.label}`,
-        `This theme averages ${nf.format(Math.round(under.mAvg))} across ${under.mN} posts market-wide — the strongest of any theme — yet ${CLIENT} ran ${under.cN === 0 ? "none" : "one"} in this window. A hypothesis worth testing, not a settled finding: the sample is small.`);
-    }
-
-    // A measured lift rather than received wisdom about video.
-    const fmt = groupStats(posts, FORMATS);
-    const vid = fmt.find((g) => g.key === "video");
-    const still = fmt.find((g) => g.key === "image");
-    const marketReel = rows.reduce((a, r) => a + r.reels, 0) / Math.max(1, rows.reduce((a, r) => a + r.posts, 0));
-    if (bbk.reelShare < marketReel - 0.1) {
-      const lift = vid && still && still.avg && vid.n >= 3 && still.n >= 3
-        ? ` Video earns ${(vid.avg / still.avg).toFixed(1)}× what single images do in this market — measured here, not assumed.`
-        : "";
-      add("amber", "Under-indexed on video",
-        `${pct(bbk.reelShare)} of ${CLIENT}'s tracked posts are video against a market average of ${pct(marketReel)}.${lift} Shifting the mix is the cheapest lever available.`);
-    }
-
-    // Which format the client leans on, against which one actually pays. This
-    // fires where the blanket "post more video" line does not: the client can
-    // sit at the market average for video and still be over-weighted on the
-    // format that earns least.
-    const myFmtN = fmt.reduce((a, g) => a + g.myN, 0);
-    const leaned = fmt.filter((g) => g.myN >= 2 && g.n >= 3).sort((a, b) => b.myN - a.myN)[0];
-    const bestFmt = fmt.filter((g) => g.n >= 3).sort((a, b) => b.avg - a.avg)[0];
-    if (leaned && bestFmt && leaned.key !== bestFmt.key) {
-      const mine = leaned.myAvg && bestFmt.myAvg
-        ? ` ${CLIENT}'s own run the same way: ${nf.format(Math.round(leaned.myAvg))} against ${nf.format(Math.round(bestFmt.myAvg))}.` : "";
-      add("amber", `${CLIENT} leans on the market's weaker format`,
-        `${leaned.label} is ${pct(leaned.myN / myFmtN)} of ${CLIENT}'s posts and averages ${nf.format(Math.round(leaned.avg))} across the market, against ${nf.format(Math.round(bestFmt.avg))} for ${bestFmt.label.toLowerCase()} — ${(bestFmt.avg / Math.max(leaned.avg, 1)).toFixed(1)}× the return.${mine}`);
-    }
-
-    const allLangs = groupStats(posts, LANGUAGES);
-    const langs = allLangs.filter((g) => g.n >= 3).sort((a, b) => b.avg - a.avg);
-    if (langs.length >= 2) {
-      const top = langs[0], bottom = langs[langs.length - 1];
-      // Share is of everything the client posted, not only of the groups big
-      // enough to compare — otherwise this disagrees with the panel above it.
-      const myTotal = allLangs.reduce((a, g) => a + g.myN, 0);
-      add("blue", `${top.label} posts earn the most in this market`,
-        `${top.label} averages ${nf.format(Math.round(top.avg))} interactions against ${nf.format(Math.round(bottom.avg))} for ${bottom.label.toLowerCase()} — ${(top.avg / Math.max(bottom.avg, 1)).toFixed(1)}× the return, across ${top.n} posts. ${CLIENT} writes ${myTotal ? pct(top.myN / myTotal) : "none"} of its posts that way.`);
+  if (bbk.audSoV) {
+    const index = bbk.engSoV / bbk.audSoV;
+    if (index < 0.9) {
+      add("red", index.toFixed(2) + "×", "attention per unit of audience",
+        "The audience is bigger than the return on it",
+        `${CLIENT} holds ${pct(bbk.audSoV)} of the market's followers but captures ${pct(bbk.engSoV)} of its engagement. The audience asset is already built and already paid for; it is not converting. That is a question of what gets published against it, not of how much is spent acquiring more.`);
+    } else if (index > 1.1) {
+      add("green", index.toFixed(2) + "×", "attention per unit of audience",
+        "The content outperforms the audience behind it",
+        `${CLIENT} captures ${pct(bbk.engSoV)} of engagement from ${pct(bbk.audSoV)} of followers. What is published is working; reach is the binding constraint, and that one does respond to spend.`);
     }
   }
+
+  const rated = rows.filter((r) => r.engRate !== null).sort((x, y) => y.engRate - x.engRate);
+  const best = rated[0];
+  if (best && bbk.engRate && best.bank !== CLIENT) {
+    add("amber", (best.engRate / bbk.engRate).toFixed(1) + "×", "strongest yield",
+      `${best.bank} earns far more per follower`,
+      `${best.bank} converts ${(best.engRate * 100).toFixed(3)}% of its followers per post against ${CLIENT}'s ${(bbk.engRate * 100).toFixed(3)}%, from an audience roughly ${Math.round(bbk.followers / Math.max(best.followers, 1))}× smaller. Scale is not what determines this.`);
+  }
+
+  const { rows: tRows } = themeRows(posts);
+  const heavy = tRows.filter((r) => r.cN >= 2).sort((x, y) => y.cN - x.cN)[0];
+  if (heavy && heavy.mAvg && heavy.cAvg < heavy.mAvg * 0.9) {
+    add("red", (heavy.cAvg / heavy.mAvg).toFixed(2) + "×", "vs market, same theme",
+      `${CLIENT}'s most-used theme underperforms the market's`,
+      `${heavy.cN} of ${CLIENT}'s posts are ${heavy.label.toLowerCase()}, averaging ${nf.format(Math.round(heavy.cAvg))} against ${nf.format(Math.round(heavy.mAvg))} for the same theme elsewhere. Competitors are not winning with a different subject — they are executing the same one better.`);
+  }
+
+  const under = tRows.filter((r) => r.cN <= 1 && r.mAvg && r.mN >= 4).sort((x, y) => y.mAvg - x.mAvg)[0];
+  if (under) {
+    add("blue", nf.format(Math.round(under.mAvg)), "market average, best theme",
+      `Strongest theme in the market, least used by ${CLIENT}`,
+      `${under.label} averages ${nf.format(Math.round(under.mAvg))} interactions across ${under.mN} posts market-wide, ahead of every other theme, and ${CLIENT} ran ${under.cN === 0 ? "none" : "one"} in this window. The sample is small, so treat it as a position worth testing rather than a settled conclusion.`);
+  }
+
+  const fmt = groupStats(posts, FORMATS);
+  const myFmtN = fmt.reduce((acc, g) => acc + g.myN, 0);
+  const leaned = fmt.filter((g) => g.myN >= 2 && g.n >= 3).sort((x, y) => y.myN - x.myN)[0];
+  const bestFmt = fmt.filter((g) => g.n >= 3).sort((x, y) => y.avg - x.avg)[0];
+  if (leaned && bestFmt && leaned.key !== bestFmt.key) {
+    add("amber", (bestFmt.avg / Math.max(leaned.avg, 1)).toFixed(1) + "×", `${FORMATS.short[bestFmt.key]} vs ${FORMATS.short[leaned.key]}`,
+      `${CLIENT} is weighted towards the weaker format`,
+      `${leaned.label} accounts for ${pct(leaned.myN / myFmtN)} of ${CLIENT}'s posts and averages ${nf.format(Math.round(leaned.avg))} across the market, against ${nf.format(Math.round(bestFmt.avg))} for ${bestFmt.label.toLowerCase()}. ${CLIENT}'s own posts follow the same pattern, so this is a mix decision rather than a production one.`);
+  }
+
+  const allLangs = groupStats(posts, LANGUAGES);
+  const langs = allLangs.filter((g) => g.n >= 3).sort((x, y) => y.avg - x.avg);
+  if (langs.length >= 2) {
+    const top = langs[0], bottom = langs[langs.length - 1];
+    // Share is of everything the client posted, not only of the groups big
+    // enough to compare — otherwise this disagrees with the panel above it.
+    const myTotal = allLangs.reduce((acc, g) => acc + g.myN, 0);
+    add("blue", (top.avg / Math.max(bottom.avg, 1)).toFixed(1) + "×", `${LANGUAGES.short[top.key]} vs ${LANGUAGES.short[bottom.key]}`,
+      `${top.label} content earns the most in this market`,
+      `${top.label} posts average ${nf.format(Math.round(top.avg))} interactions against ${nf.format(Math.round(bottom.avg))} for ${bottom.label.toLowerCase()}, across ${top.n} and ${bottom.n} posts respectively. ${CLIENT} writes ${myTotal ? pct(top.myN / myTotal) : "none"} of its posts that way. Committing to one language per post costs nothing and is the fastest of these to act on.`);
+  }
+
   return out;
 }
 
 function renderRecommendations(agg, posts, campaigns) {
+  const recs = recommendations(agg, posts, campaigns);
   const tones = {
-    red: "border-red-400 bg-red-50", amber: "border-amber-400 bg-amber-50",
-    green: "border-emerald-400 bg-emerald-50", blue: "border-blue-400 bg-blue-50",
+    red: { ink: "#DC2626", ring: "border-red-200" },
+    amber: { ink: "#B45309", ring: "border-amber-200" },
+    green: { ink: "#059669", ring: "border-emerald-200" },
+    blue: { ink: "#2563EB", ring: "border-blue-200" },
   };
-  $("recommendations").innerHTML = recommendations(agg, posts, campaigns).map((r) => `
-    <div class="border-l-4 ${tones[r.tone]} p-4 rounded-r-lg">
-      <h4 class="font-bold text-sm text-slate-900">${esc(r.title)}</h4>
-      <p class="text-sm text-slate-600 mt-1">${esc(r.body)}</p>
-    </div>`).join("");
+
+  $("recommendations").innerHTML = recs.map((r) => {
+    const t = tones[r.tone] || tones.blue;
+    return `<div class="reveal card bg-white border ${t.ring} rounded-xl p-4 sm:p-5 flex gap-4 items-start">
+      <div class="shrink-0 w-16 sm:w-20 text-center">
+        <div class="text-xl sm:text-2xl font-extrabold num leading-none" style="color:${t.ink}">${esc(r.metric)}</div>
+        <div class="text-[9px] sm:text-[10px] uppercase tracking-wide text-slate-400 mt-1.5 leading-tight">${esc(r.metricLabel)}</div>
+      </div>
+      <div class="min-w-0 border-l border-slate-100 pl-4">
+        <h4 class="font-bold text-sm text-slate-900 leading-snug">${esc(r.title)}</h4>
+        <p class="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed">${esc(r.body)}</p>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Bottom line, stated before the detail rather than left to be inferred.
+  const bbk = agg.rows.find((r) => r.bank === CLIENT);
+  let line = "";
+  if (bbk && bbk.audSoV) {
+    const byAud = [...agg.rows].sort((x, y) => y.audSoV - x.audSoV);
+    const byRate = agg.rows.filter((r) => r.engRate !== null).sort((x, y) => y.engRate - x.engRate);
+    line = `${CLIENT} holds the ${ordinal(byAud.findIndex((r) => r.bank === CLIENT) + 1)} largest audience of ${agg.rows.length} banks ` +
+      `but ranks ${ordinal(agg.rows.indexOf(bbk) + 1)} on share of attention and ${ordinal(byRate.findIndex((r) => r.bank === CLIENT) + 1)} on attention earned per follower. ` +
+      `The audience is already built. What is published against it is where the gap sits — and language, format and theme are all measurable, all cheap to change, and all shown below.`;
+  }
+  $("rec-summary").innerHTML = line
+    ? `<div class="rounded-xl p-4 sm:p-6 text-white" style="background: var(--bbk)">
+         <p class="text-[10px] uppercase tracking-widest opacity-60">Bottom line</p>
+         <p class="text-sm sm:text-base font-semibold mt-2 leading-relaxed">${esc(line)}</p>
+       </div>`
+    : "";
 }
 
 function renderTopPosts(posts) {
@@ -1067,7 +1183,8 @@ async function exportPptx() {
     for (let i = 0; i < recs.length; i += PER_SLIDE) {
       const chunk = recs.slice(i, i + PER_SLIDE);
       const s = titled(i === 0 ? "What To Do Next" : "What To Do Next (cont.)");
-      s.addText(stackRuns(chunk.map((r) => [r.title, r.body])),
+      // Lead each heading with its figure, as the page does.
+      s.addText(stackRuns(chunk.map((r) => [`${r.metric}  ·  ${r.title}`, r.body])),
         { x: 0.5, y: 1.15, w: 9, h: 4.1, valign: "top" });
     }
 
@@ -1103,8 +1220,8 @@ function render() {
   renderStandings(agg);
   renderCharts(agg);
   renderTable(agg);
-  renderGroup("format-body", "format-note", groupStats(posts, FORMATS));
-  renderGroup("language-body", "language-note", groupStats(posts, LANGUAGES));
+  renderGroup("format", posts, FORMATS);
+  renderGroup("language", posts, LANGUAGES);
   renderThemes(posts);
   renderRecommendations(agg, posts, campaigns);
   renderTopPosts(posts);
