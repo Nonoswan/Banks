@@ -6,7 +6,6 @@
 <title>BBK Competitor Intelligence — Share of Voice</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root { --bbk: #083981; --bbk-dark: #052A61; --bbk-gold: #FFD200; --bbk-orange: #FAA634; --ease: cubic-bezier(.22,1,.36,1); }
@@ -45,15 +44,12 @@
   @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
   .fade-up { animation: fadeUp .45s ease-out both; }
 
-  #btn-export { transition: transform .25s var(--ease), box-shadow .25s ease, filter .2s ease; }
-  #btn-export:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 14px 30px -10px rgba(8,57,129,.6); }
-  #btn-export:disabled { opacity: .6; cursor: wait; transform: none; }
 
   /* Anyone who has asked their OS for less motion gets none of it. */
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     .reveal { opacity: 1; transform: none; filter: none; transition: none; }
-    .card:hover, #btn-export:hover { transform: none; }
+    .card:hover { transform: none; }
     .live-dot, .fade-up, .hero, .hero::before { animation: none; }
     .bar { transition: none; }
   }
@@ -389,15 +385,6 @@
   </main>
 </div>
 
-<!-- Stays reachable at any scroll position, which is where the request came from. -->
-<button id="btn-export" class="hidden fixed bottom-5 right-4 sm:right-6 z-50 shadow-xl rounded-full
-  px-5 py-3.5 text-sm font-semibold text-white flex items-center gap-2 transition hover:brightness-110 active:scale-95"
-  style="background: var(--bbk)">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line>
-  </svg>
-  <span id="btn-export-label">Download PPT</span>
-</button>
 
 <script>
 const SUPABASE_URL = "https://kbcdgleigtjmhzfhkdvp.supabase.co";
@@ -457,7 +444,7 @@ const hide = (id) => $(id).classList.add("hidden");
 
 const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-let ALL_POSTS = [], PROFILES = [], CHARTS = [], organicOnly = true, LAST = null;
+let ALL_POSTS = [], PROFILES = [], CHARTS = [], organicOnly = true;
 
 // The conclusions rest on the organic baseline whatever the dashboard is
 // showing. Recomputing them per view would state the same argument twice on
@@ -983,16 +970,12 @@ function recommendations({ rows }, posts, campaigns) {
       "One competition distorts the raw market",
       `${c.bank_name}'s prize draw, set aside below so the comparison reflects what these banks publish normally.`,
       [{ label: "That one post", value: engOf(c) }, { label: "Typical post here", value: med(posts) }]);
-    // Context rather than an action. The page shows it; the deck's key-figures
-    // slide states it once and filters these out of What To Do Next.
-    out[out.length - 1].caveat = true;
   } else if (campaigns.length) {
     const total = rows.reduce((acc, r) => acc + r.engagement, 0);
     add("amber", total ? pct(engOf(campaigns[0]) / total) : "—", "from one post",
       "A single competition dominates this view",
       "Evidence of what a giveaway can do, not of sustained performance.",
       [{ label: "That one post", value: engOf(campaigns[0]) }, { label: "Typical post here", value: med(posts) }]);
-    out[out.length - 1].caveat = true;
   }
 
   if (!bbk) {
@@ -1265,168 +1248,10 @@ function renderCampaignPanel(campaigns) {
     : `Including ${many ? "the giveaways" : "the giveaway"} — ${many ? "those posts" : "that one post"} then decides most of the ranking.`;
 }
 
-// ---------------------------------------------------------------------------
-// PowerPoint export
-// ---------------------------------------------------------------------------
-
-const PPT_DARK = "0F172A", PPT_GREY = "64748B", PPT_BLUE = "083981";
-
-/**
- * Builds heading/body pairs as PptxGenJS text runs.
- *
- * Line breaks come from breakLine rather than "\n": PptxGenJS ignores newlines
- * inside array-form runs, which silently yields an empty text box. A small
- * spacer run separates the pairs, since paragraph spacing is not exposed here.
- */
-function stackRuns(pairs, headSize = 14, bodySize = 11) {
-  const runs = [];
-  pairs.forEach(([head, body2], i) => {
-    runs.push({ text: head, options: { bold: true, fontSize: headSize, color: PPT_DARK, breakLine: true } });
-    runs.push({ text: body2, options: { fontSize: bodySize, color: PPT_GREY, breakLine: true } });
-    if (i < pairs.length - 1) runs.push({ text: " ", options: { fontSize: 7, breakLine: true } });
-  });
-  return runs;
-}
-
-/**
- * Five slides, no more: cover, where BBK stands, the figures that matter, and
- * What To Do Next across two. An earlier version mirrored the whole page onto
- * eleven slides — but the page is for exploring and the deck is for a meeting,
- * and a deck that needs its own table of contents has failed as a deck.
- *
- * Everything is computed from BASELINE (the organic figures), stated on the
- * cover, so the deck is identical whichever view the page was showing. The
- * standings bars are drawn as plain shapes rather than an embedded chart
- * library — deterministic, and verifiable without a browser.
- */
-async function exportPptx() {
-  const btn = $("btn-export"), label = $("btn-export-label");
-  btn.disabled = true; label.textContent = "Building…";
-  try {
-    const src2 = BASELINE || LAST;
-    const { rows } = src2.agg;
-    const bbk = rows.find((r) => r.bank === CLIENT);
-    const campaigns = src2.campaigns || [];
-    const recs = recommendations(src2.agg, src2.posts, campaigns).filter((r) => !r.caveat);
-
-    const pptx = new PptxGenJS();
-    pptx.layout = "LAYOUT_16x9";
-    pptx.title = "BBK Competitor Intelligence";
-    const stamp = new Date().toLocaleDateString("en-GB", { timeZone: "Asia/Bahrain", day: "numeric", month: "short", year: "numeric" });
-
-    // 1 — cover
-    const cover = pptx.addSlide();
-    cover.background = { color: PPT_DARK };
-    cover.addText("BBK Competitor Intelligence", { x: 0.6, y: 1.9, w: 8.8, h: 0.9, fontSize: 40, bold: true, color: "FFFFFF" });
-    cover.addText("Instagram share of voice · Bahrain retail banking", { x: 0.6, y: 2.8, w: 8.8, h: 0.4, fontSize: 16, color: "94A3B8" });
-    cover.addText("Prepared for Mohamed K. Alaali", { x: 0.6, y: 4.15, w: 8.8, h: 0.3, fontSize: 13, color: "CBD5E1" });
-    cover.addText(`${stamp}  ·  organic baseline — campaign posts excluded`, { x: 0.6, y: 4.55, w: 8.8, h: 0.3, fontSize: 11, color: "64748B" });
-
-    const PAGE = "F1F5F9", CARD = "FFFFFF", EDGE = "E2E8F0";
-    const card = (sl, x, y, w, h) => sl.addShape(pptx.ShapeType.roundRect, {
-      x, y, w, h, fill: { color: CARD }, line: { color: EDGE, width: 1 }, rectRadius: 0.05,
-    });
-
-    // 2 — where BBK stands
-    const sum = pptx.addSlide();
-    sum.background = { color: PAGE };
-    sum.addText("Where BBK stands", { x: 0.5, y: 0.3, w: 9, h: 0.45, fontSize: 22, bold: true, color: PPT_DARK });
-    if (bbk && bbk.audSoV) {
-      const n = rows.length;
-      const ranks = [
-        [ordinal([...rows].sort((x, y) => y.audSoV - x.audSoV).findIndex((r) => r.bank === CLIENT) + 1), "Audience owned"],
-        [ordinal(rows.indexOf(bbk) + 1), "Attention earned"],
-        [ordinal(rows.filter((r) => r.engRate !== null).sort((x, y) => y.engRate - x.engRate).findIndex((r) => r.bank === CLIENT) + 1), "Return per follower"],
-      ];
-      ranks.forEach(([big, small], i) => {
-        const x = 0.5 + i * 3.1, w = 2.8;
-        card(sum, x, 0.95, w, 1.35);
-        sum.addText(big, { x, y: 1.08, w, h: 0.62, fontSize: 34, bold: true, color: PPT_BLUE, align: "center" });
-        sum.addText(small, { x, y: 1.68, w, h: 0.26, fontSize: 11, bold: true, color: PPT_DARK, align: "center" });
-        sum.addText("of " + n + " banks", { x, y: 1.93, w, h: 0.24, fontSize: 9, color: PPT_GREY, align: "center" });
-      });
-
-      const kpis = [
-        [pct(bbk.engSoV), "Engagement SoV"],
-        [pct(bbk.audSoV), "Audience SoV"],
-        [(bbk.engSoV / bbk.audSoV).toFixed(2) + "x", "Performance index"],
-        [nf.format(src2.agg.totalEng), "Engagement tracked"],
-      ];
-      kpis.forEach(([v, k], i) => {
-        const w = 2.13, x = 0.5 + i * (w + 0.16);
-        card(sum, x, 2.5, w, 0.95);
-        sum.addText(v, { x, y: 2.6, w, h: 0.42, fontSize: 19, bold: true, color: PPT_DARK, align: "center" });
-        sum.addText(k, { x, y: 3.02, w, h: 0.28, fontSize: 9, color: PPT_GREY, align: "center" });
-      });
-
-      sum.addShape(pptx.ShapeType.roundRect, { x: 0.5, y: 3.65, w: 9, h: 1.15, fill: { color: PPT_BLUE }, rectRadius: 0.05 });
-      sum.addText("BOTTOM LINE", { x: 0.78, y: 3.78, w: 8.5, h: 0.22, fontSize: 8, bold: true, color: "9DB6DA", charSpacing: 2 });
-      sum.addText("The audience is already built. The gap is in what gets published against it — and language, format and theme are all measurable and cheap to change.",
-        { x: 0.78, y: 4.0, w: 8.45, h: 0.7, fontSize: 12.5, bold: true, color: "FFFFFF", valign: "top" });
-    }
-
-    // 3 — share of attention, ranked
-    const fig = pptx.addSlide();
-    fig.background = { color: PAGE };
-    fig.addText("Share of attention, ranked", { x: 0.5, y: 0.3, w: 9, h: 0.45, fontSize: 22, bold: true, color: PPT_DARK });
-    card(fig, 0.5, 0.95, 9, 3.35);
-    const maxSov = Math.max(...rows.map((r) => r.engSoV), 0.0001);
-    rows.forEach((r, i) => {
-      const y = 1.12 + i * 0.52, isClient = r.bank === CLIENT;
-      fig.addText(r.bank, { x: 0.75, y, w: 2.0, h: 0.38, fontSize: 11.5, bold: isClient, color: isClient ? PPT_BLUE : PPT_DARK, valign: "middle" });
-      fig.addShape(pptx.ShapeType.roundRect, {
-        x: 2.85, y: y + 0.08, w: Math.max((r.engSoV / maxSov) * 5.0, 0.1), h: 0.22,
-        fill: { color: isClient ? PPT_BLUE : "CBD5E1" }, rectRadius: 0.05,
-      });
-      fig.addText(pct(r.engSoV), { x: 8.05, y, w: 1.15, h: 0.38, fontSize: 11.5, bold: true, color: isClient ? PPT_BLUE : PPT_DARK, align: "right", valign: "middle" });
-    });
-    if (campaigns.length) {
-      const c = campaigns[0];
-      const otherEng = src2.posts.reduce((acc, p) => acc + engOf(p), 0);
-      fig.addText(`Excluded above: one ${c.bank_name} prize draw earned ${nf.format(engOf(c))} interactions — ${(engOf(c) / Math.max(otherEng, 1)).toFixed(1)}x the other ${src2.posts.length} posts from all ${rows.length} banks combined.`,
-        { x: 0.5, y: 4.42, w: 9, h: 0.4, fontSize: 10, italic: true, color: PPT_GREY });
-    }
-    fig.addText(`Public Instagram · ${rows.length} banks x 10 most recent posts · collected ${stamp} via Apify · engagement = likes + comments · rates per follower, as Instagram exposes no reach for third-party accounts`,
-      { x: 0.5, y: 4.85, w: 9, h: 0.45, fontSize: 8, color: "94A3B8" });
-
-    // 4 — what to do next, on one slide. The campaign caveat is filtered out
-    // above: slide three states it, and repeating it would spend a quarter of
-    // this slide saying the same thing twice.
-    const INK = { red: "DC2626", amber: "B45309", green: "059669", blue: "2563EB" };
-    const act = pptx.addSlide();
-    act.background = { color: PAGE };
-    act.addText("What To Do Next", { x: 0.5, y: 0.3, w: 9, h: 0.45, fontSize: 22, bold: true, color: PPT_DARK });
-    recs.slice(0, 4).forEach((r, i) => {
-      const y = 0.95 + i * 1.06, ink = INK[r.tone] || INK.blue;
-      card(act, 0.5, y, 9, 0.94);
-      act.addShape(pptx.ShapeType.roundRect, { x: 0.65, y: y + 0.12, w: 1.35, h: 0.7, fill: { color: ink }, rectRadius: 0.05 });
-      act.addText(r.metric, { x: 0.65, y: y + 0.19, w: 1.35, h: 0.32, fontSize: 15, bold: true, color: "FFFFFF", align: "center" });
-      act.addText(r.metricLabel, { x: 0.65, y: y + 0.5, w: 1.35, h: 0.24, fontSize: 6.5, color: "FFFFFF", align: "center" });
-      act.addText(r.title, { x: 2.15, y: y + 0.13, w: 7.2, h: 0.28, fontSize: 12.5, bold: true, color: PPT_DARK, valign: "middle" });
-      const pair = r.compare && r.compare.length
-        ? "   " + r.compare.map((c2) => `${c2.label} ${c2.unit === "%" ? c2.value.toFixed(c2.dp || 1) + "%" : nf.format(Math.round(c2.value))}`).join("  vs  ")
-        : "";
-      act.addText(r.line + pair, { x: 2.15, y: y + 0.42, w: 7.2, h: 0.42, fontSize: 9.5, color: PPT_GREY, valign: "top" });
-    });
-
-    await pptx.writeFile({ fileName: `BBK-Competitor-Intelligence-${new Date().toISOString().slice(0, 10)}.pptx` });
-    label.textContent = "Downloaded";
-    setTimeout(() => (label.textContent = "Download PPT"), 2200);
-  } catch (e) {
-    console.error(e);
-    label.textContent = "Export failed";
-    alert("Could not build the deck: " + (e.message || e) + "\n\nThe page needs an internet connection to load the PowerPoint library.");
-    setTimeout(() => (label.textContent = "Download PPT"), 2500);
-  } finally {
-    btn.disabled = false;
-  }
-}
-
 function render() {
   const campaigns = ALL_POSTS.filter((p) => p._outlier);
   const posts = organicOnly ? ALL_POSTS.filter((p) => !p._outlier) : ALL_POSTS;
   const agg = aggregate(posts, PROFILES);
-  LAST = { agg, posts, campaigns };
 
   renderCampaignPanel(campaigns);
   renderKpis(agg, posts.length);
@@ -1484,7 +1309,6 @@ async function load() {
   }
 
   show("dashboard");
-  show("btn-export");
 
   const organicPosts = ALL_POSTS.filter((p) => !p._outlier);
   BASELINE = {
@@ -1495,7 +1319,6 @@ async function load() {
 
   $("btn-organic").onclick = () => { organicOnly = true; render(); };
   $("btn-all").onclick = () => { organicOnly = false; render(); };
-  $("btn-export").onclick = exportPptx;
 
   const swap = (from, to) => {
     hide(from); show(to);
