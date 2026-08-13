@@ -9,14 +9,13 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
   :root { --bbk: #C8102E; }
-  body { font-feature-settings: "tnum"; }
   .num { font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body class="bg-slate-100 min-h-screen">
 <div class="max-w-7xl mx-auto p-6">
 
-  <header class="mb-6 flex flex-wrap gap-4 justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+  <header class="mb-4 flex flex-wrap gap-4 justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-slate-200">
     <div>
       <h1 class="text-2xl font-bold text-slate-900">BBK Competitor Intelligence</h1>
       <p class="text-sm text-slate-500">Instagram share of voice · Bahrain retail banking</p>
@@ -27,21 +26,38 @@
     </div>
   </header>
 
-  <!-- Honest empty / error state, shown instead of the dashboard when there is no data -->
   <div id="empty-state" class="hidden bg-white border border-amber-300 rounded-xl p-8 shadow-sm">
     <h2 class="text-lg font-bold text-slate-900 mb-2" id="empty-title">No data yet</h2>
     <p class="text-sm text-slate-600 mb-4" id="empty-body"></p>
     <ol class="text-sm text-slate-600 list-decimal ml-5 space-y-1">
       <li>Run <code class="bg-slate-100 px-1 rounded">schema.sql</code> in the Supabase SQL editor.</li>
       <li>Add <code class="bg-slate-100 px-1 rounded">APIFY_TOKEN</code> to GitHub → Settings → Secrets → Actions.</li>
-      <li>Trigger the <em>Run Instagram Scraper</em> workflow manually, and check it exits green.</li>
+      <li>Trigger the <em>Run Instagram Scraper</em> workflow, and check it exits green.</li>
       <li>Reload this page.</li>
     </ol>
   </div>
 
   <main id="dashboard" class="hidden">
 
-    <!-- KPI row -->
+    <!-- Campaign-outlier control. The single most important context on the page:
+         one giveaway post can carry most of a market's engagement. -->
+    <section id="campaign-panel" class="hidden mb-6 bg-white border-l-4 border-amber-400 rounded-r-xl shadow-sm p-5">
+      <div class="flex flex-wrap gap-4 justify-between items-start">
+        <div class="flex-1 min-w-64">
+          <h3 class="font-bold text-slate-900 text-sm">Campaign posts detected</h3>
+          <p class="text-xs text-slate-600 mt-1" id="campaign-detail"></p>
+          <div id="campaign-list" class="mt-3 space-y-1"></div>
+        </div>
+        <div class="shrink-0">
+          <div class="inline-flex rounded-lg border border-slate-300 overflow-hidden text-xs font-semibold">
+            <button id="btn-organic" class="px-4 py-2 transition">Organic baseline</button>
+            <button id="btn-all" class="px-4 py-2 transition border-l border-slate-300">As collected</button>
+          </div>
+          <p class="text-xs text-slate-400 mt-2 max-w-56 text-right" id="mode-note"></p>
+        </div>
+      </div>
+    </section>
+
     <section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 border-t-4" style="border-top-color: var(--bbk)">
         <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide">BBK Engagement SoV</h3>
@@ -65,7 +81,6 @@
       </div>
     </section>
 
-    <!-- Charts -->
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
       <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
         <h3 class="font-bold text-slate-800 mb-1">Engagement Share of Voice</h3>
@@ -81,18 +96,16 @@
 
     <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
       <h3 class="font-bold text-slate-800 mb-1">Share of Voice vs Share of Audience</h3>
-      <p class="text-xs text-slate-400 mb-4">Bars above their audience line are earning more attention than their size implies.</p>
+      <p class="text-xs text-slate-400 mb-4">Bars above the dashed line earn more attention than their size implies.</p>
       <div class="h-80"><canvas id="chart-gap"></canvas></div>
     </section>
 
-    <!-- Recommendations -->
     <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
       <h3 class="font-bold text-slate-800 mb-1">What To Do Next</h3>
       <p class="text-xs text-slate-400 mb-4">Generated from the data above. Each point states the figure it rests on.</p>
       <div id="recommendations" class="space-y-3"></div>
     </section>
 
-    <!-- Table -->
     <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
       <h3 class="font-bold text-slate-800 mb-4">Full Breakdown</h3>
       <div class="overflow-x-auto">
@@ -113,16 +126,13 @@
       </div>
     </section>
 
-    <!-- Top posts -->
     <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
       <h3 class="font-bold text-slate-800 mb-1">Highest-Engagement Posts in Market</h3>
       <p class="text-xs text-slate-400 mb-4">What is actually working right now, whoever posted it.</p>
       <div id="top-posts" class="space-y-2"></div>
     </section>
 
-    <footer class="text-xs text-slate-400 mt-6 text-center">
-      <span id="footer-note"></span>
-    </footer>
+    <footer class="text-xs text-slate-400 mt-6 text-center"><span id="footer-note"></span></footer>
   </main>
 </div>
 
@@ -131,9 +141,13 @@ const SUPABASE_URL = "https://kbcdgleigtjmhzfhkdvp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_JFGvztc25SDhuft7UJMJEg_I2_O4_3M";
 const CLIENT = "BBK";
 
+// A post earning more than this multiple of its own account's median is a
+// campaign spike, not typical output. Giveaways ("comment to win") routinely
+// land 100x a normal post and would otherwise decide the entire ranking.
+const OUTLIER_MULTIPLE = 5;
+
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Distinct hues; BBK always renders in its brand red so it reads instantly.
 const BBK_RED = "#C8102E";
 const PALETTE = ["#1E4E79", "#2E8B8B", "#B07C2A", "#6A5ACD", "#3F7D3F", "#8A6F5C"];
 
@@ -141,37 +155,55 @@ const nf = new Intl.NumberFormat("en-BH");
 const pct = (n) => (n * 100).toFixed(1) + "%";
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const engOf = (p) => (p.likes_count || 0) + (p.comments_count || 0);
 
-function show(el) { document.getElementById(el).classList.remove("hidden"); }
-function hide(el) { document.getElementById(el).classList.add("hidden"); }
+const $ = (id) => document.getElementById(id);
+const show = (id) => $(id).classList.remove("hidden");
+const hide = (id) => $(id).classList.add("hidden");
+
+let ALL_POSTS = [], PROFILES = [], CHARTS = [], organicOnly = true;
 
 function setStatus(text, tone, detail) {
-  const pill = document.getElementById("status-pill");
   const tones = {
     live: "bg-emerald-50 text-emerald-700",
     warn: "bg-amber-50 text-amber-700",
     error: "bg-red-50 text-red-700",
   };
-  pill.className = "inline-block px-3 py-1 rounded-full text-xs font-semibold " + (tones[tone] || tones.warn);
-  pill.textContent = text;
-  document.getElementById("status-detail").textContent = detail || "";
+  $("status-pill").className = "inline-block px-3 py-1 rounded-full text-xs font-semibold " + (tones[tone] || tones.warn);
+  $("status-pill").textContent = text;
+  $("status-detail").textContent = detail || "";
 }
 
 function failTo(title, body) {
-  document.getElementById("empty-title").textContent = title;
-  document.getElementById("empty-body").textContent = body;
+  $("empty-title").textContent = title;
+  $("empty-body").textContent = body;
   show("empty-state");
   hide("dashboard");
 }
 
-/** Fold posts + profile snapshots into one row per bank. */
+/** Median engagement per account, used as each account's own baseline. */
+function flagOutliers(posts) {
+  const byHandle = {};
+  for (const p of posts) (byHandle[p.bank_handle] ||= []).push(p);
+
+  const medians = {};
+  for (const h in byHandle) {
+    const s = byHandle[h].map(engOf).sort((a, b) => a - b);
+    const mid = s.length >> 1;
+    medians[h] = s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  }
+  for (const p of posts) {
+    p._outlier = engOf(p) > OUTLIER_MULTIPLE * Math.max(medians[p.bank_handle] || 0, 1);
+  }
+  return posts.filter((p) => p._outlier);
+}
+
 function aggregate(posts, profiles) {
   const byBank = new Map();
 
-  // Keyed by handle, not display name. Handles are what actually identify an
-  // account, and stale snapshots from since-corrected handles share the same
-  // bank_name — keying by name would let a dormant lookalike's follower count
-  // overwrite the real one.
+  // Keyed by handle, not display name. Handles identify an account; stale
+  // snapshots from since-corrected handles share the same bank_name, and
+  // keying by name would let a dormant lookalike overwrite the real figures.
   for (const p of posts) {
     const handle = p.bank_handle;
     if (!handle) continue;
@@ -180,12 +212,12 @@ function aggregate(posts, profiles) {
     }
     const row = byBank.get(handle);
     row.posts += 1;
-    row.engagement += (p.likes_count || 0) + (p.comments_count || 0);
+    row.engagement += engOf(p);
     if ((p.post_type || "").toLowerCase() === "video") row.reels += 1;
   }
 
-  // Profiles for handles with no posts are ignored entirely, which is how
-  // superseded rows drop out without needing to be deleted.
+  // Profiles whose handle has no posts are ignored, which is how superseded
+  // rows drop out without needing to be deleted.
   for (const prof of profiles) {
     const row = byBank.get(prof.bank_handle);
     if (row) row.followers = prof.followers_count || 0;
@@ -196,60 +228,52 @@ function aggregate(posts, profiles) {
 
   for (const row of byBank.values()) {
     row.avgPerPost = row.posts ? row.engagement / row.posts : 0;
-    // Engagement rate is undefined without followers — keep it null rather
-    // than showing 0%, which would read as "terrible" instead of "unknown".
+    // Null rather than 0 when followers are unknown — 0% reads as "terrible"
+    // when the honest answer is "not measured".
     row.engRate = row.followers > 0 ? row.avgPerPost / row.followers : null;
     row.engSoV = totalEng > 0 ? row.engagement / totalEng : 0;
     row.audSoV = totalFol > 0 ? row.followers / totalFol : null;
     row.reelShare = row.posts ? row.reels / row.posts : 0;
   }
 
-  return {
-    rows: [...byBank.values()].sort((a, b) => b.engagement - a.engagement),
-    totalEng,
-    totalFol,
-  };
+  return { rows: [...byBank.values()].sort((a, b) => b.engagement - a.engagement), totalEng, totalFol };
 }
 
-function renderKpis({ rows, totalEng, totalFol }, postCount) {
+const colourFor = (row, i) => (row.bank === CLIENT ? BBK_RED : PALETTE[i % PALETTE.length]);
+
+function renderKpis({ rows, totalEng }, postCount) {
   const bbk = rows.find((r) => r.bank === CLIENT);
-  document.getElementById("kpi-total").textContent = nf.format(totalEng);
-  document.getElementById("kpi-total-note").textContent =
-    `across ${nf.format(postCount)} posts · ${rows.length} banks`;
+  $("kpi-total").textContent = nf.format(totalEng);
+  $("kpi-total-note").textContent = `across ${nf.format(postCount)} posts · ${rows.length} banks`;
 
   if (!bbk) {
-    document.getElementById("kpi-eng-sov").textContent = "n/a";
-    document.getElementById("kpi-aud-sov").textContent = "n/a";
-    document.getElementById("kpi-index").textContent = "n/a";
-    document.getElementById("kpi-index-note").textContent = `No rows for ${CLIENT}`;
+    ["kpi-eng-sov", "kpi-aud-sov", "kpi-index"].forEach((id) => ($(id).textContent = "n/a"));
+    $("kpi-index-note").textContent = `No rows for ${CLIENT}`;
     return;
   }
 
-  document.getElementById("kpi-eng-sov").textContent = pct(bbk.engSoV);
-  document.getElementById("kpi-aud-sov").textContent = bbk.audSoV === null ? "n/a" : pct(bbk.audSoV);
+  $("kpi-eng-sov").textContent = pct(bbk.engSoV);
+  $("kpi-aud-sov").textContent = bbk.audSoV === null ? "n/a" : pct(bbk.audSoV);
 
-  const idxEl = document.getElementById("kpi-index");
   if (bbk.audSoV) {
     const index = bbk.engSoV / bbk.audSoV;
-    idxEl.textContent = index.toFixed(2) + "×";
-    idxEl.className = "text-4xl font-bold num mt-2 " + (index >= 1 ? "text-emerald-600" : "text-red-600");
-    document.getElementById("kpi-index-note").textContent =
-      index >= 1 ? "Punching above its audience size" : "Under-earning relative to its size";
+    $("kpi-index").textContent = index.toFixed(2) + "×";
+    $("kpi-index").className = "text-4xl font-bold num mt-2 " + (index >= 1 ? "text-emerald-600" : "text-red-600");
+    $("kpi-index-note").textContent = index >= 1 ? "Punching above its audience size" : "Under-earning relative to its size";
   } else {
-    idxEl.textContent = "n/a";
-    document.getElementById("kpi-index-note").textContent = "Needs follower data";
+    $("kpi-index").textContent = "n/a";
+    $("kpi-index-note").textContent = "Needs follower data";
   }
 }
 
-function colourFor(row, i) {
-  return row.bank === CLIENT ? BBK_RED : PALETTE[i % PALETTE.length];
-}
-
 function renderCharts({ rows }) {
+  CHARTS.forEach((c) => c.destroy());
+  CHARTS = [];
+
   const labels = rows.map((r) => r.bank);
   const colours = rows.map(colourFor);
 
-  new Chart(document.getElementById("chart-sov"), {
+  CHARTS.push(new Chart($("chart-sov"), {
     type: "doughnut",
     data: { labels, datasets: [{ data: rows.map((r) => r.engagement), backgroundColor: colours, borderWidth: 2, borderColor: "#fff" }] },
     options: {
@@ -259,23 +283,20 @@ function renderCharts({ rows }) {
         tooltip: { callbacks: { label: (c) => `${c.label}: ${nf.format(c.raw)} (${pct(rows[c.dataIndex].engSoV)})` } },
       },
     },
-  });
+  }));
 
   const rated = rows.filter((r) => r.engRate !== null).sort((a, b) => b.engRate - a.engRate);
-  new Chart(document.getElementById("chart-rate"), {
+  CHARTS.push(new Chart($("chart-rate"), {
     type: "bar",
-    data: {
-      labels: rated.map((r) => r.bank),
-      datasets: [{ label: "Engagement rate", data: rated.map((r) => r.engRate * 100), backgroundColor: rated.map(colourFor) }],
-    },
+    data: { labels: rated.map((r) => r.bank), datasets: [{ data: rated.map((r) => r.engRate * 100), backgroundColor: rated.map(colourFor) }] },
     options: {
       maintainAspectRatio: false,
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.raw.toFixed(3) + "% of followers engage per post" } } },
       scales: { y: { beginAtZero: true, ticks: { callback: (v) => v.toFixed(2) + "%" } } },
     },
-  });
+  }));
 
-  new Chart(document.getElementById("chart-gap"), {
+  CHARTS.push(new Chart($("chart-gap"), {
     type: "bar",
     data: {
       labels,
@@ -289,11 +310,11 @@ function renderCharts({ rows }) {
       plugins: { tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.raw.toFixed(1)}%` } } },
       scales: { y: { beginAtZero: true, ticks: { callback: (v) => v + "%" } } },
     },
-  });
+  }));
 }
 
 function renderTable({ rows }) {
-  document.getElementById("table-body").innerHTML = rows.map((r) => {
+  $("table-body").innerHTML = rows.map((r) => {
     const isClient = r.bank === CLIENT;
     return `<tr class="border-b border-slate-100 ${isClient ? "bg-red-50 font-semibold" : ""}">
       <td class="py-3 px-3">
@@ -311,38 +332,48 @@ function renderTable({ rows }) {
 }
 
 function renderTopPosts(posts) {
-  const top = [...posts]
-    .map((p) => ({ ...p, eng: (p.likes_count || 0) + (p.comments_count || 0) }))
-    .sort((a, b) => b.eng - a.eng)
-    .slice(0, 5);
-
-  document.getElementById("top-posts").innerHTML = top.map((p, i) => `
+  const top = [...posts].sort((a, b) => engOf(b) - engOf(a)).slice(0, 5);
+  $("top-posts").innerHTML = top.map((p, i) => `
     <div class="flex gap-3 items-start p-3 rounded-lg border border-slate-100 ${p.bank_name === CLIENT ? "bg-red-50" : "bg-slate-50"}">
       <span class="text-slate-300 font-bold text-lg num">${i + 1}</span>
       <div class="flex-1 min-w-0">
         <div class="flex justify-between gap-3">
-          <span class="font-semibold text-sm">${esc(p.bank_name)}</span>
-          <span class="text-sm font-bold num whitespace-nowrap">${nf.format(p.eng)} eng.</span>
+          <span class="font-semibold text-sm">${esc(p.bank_name)}
+            ${p._outlier ? '<span class="ml-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-bold">CAMPAIGN</span>' : ""}
+          </span>
+          <span class="text-sm font-bold num whitespace-nowrap">${nf.format(engOf(p))} eng.</span>
         </div>
-        <p class="text-xs text-slate-500 mt-1 line-clamp-2">${esc((p.caption || "").slice(0, 160)) || "<em>no caption</em>"}</p>
-        <a href="${esc(p.post_url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 hover:underline">View post →</a>
+        <p class="text-xs text-slate-500 mt-1">${esc((p.caption || "").slice(0, 150)) || "<em>no caption</em>"}</p>
+        <div class="flex gap-3 mt-1">
+          <span class="text-xs text-slate-400 num">${nf.format(p.likes_count || 0)} likes · ${nf.format(p.comments_count || 0)} comments</span>
+          <a href="${esc(p.post_url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 hover:underline">View →</a>
+        </div>
       </div>
     </div>`).join("");
 }
 
-/** Rule-based advice. Every line cites the number it came from. */
-function renderRecommendations({ rows }, posts) {
+function renderRecommendations({ rows }, posts, campaigns) {
   const bbk = rows.find((r) => r.bank === CLIENT);
   const out = [];
   const add = (tone, title, body) => out.push({ tone, title, body });
 
+  // The campaign caveat leads, because it reframes every number under it.
+  if (campaigns.length && organicOnly) {
+    const c = campaigns[0];
+    add("blue", "Figures exclude a competition post",
+      `${esc(c.bank_name)} ran a giveaway earning ${nf.format(engOf(c))} interactions — ${nf.format(c.comments_count || 0)} of them comments. Left in, it alone would take most of the market's engagement and make every other comparison meaningless. These figures show typical output instead. Switch to "As collected" to see the raw picture.`);
+  } else if (campaigns.length && !organicOnly) {
+    add("amber", "A single competition dominates these figures",
+      `${esc(campaigns[0].bank_name)}'s giveaway accounts for ${pct(engOf(campaigns[0]) / rows.reduce((a, r) => a + r.engagement, 0))} of all tracked engagement. Treat this view as evidence of what a competition can do, not as a read on sustained performance.`);
+  }
+
   if (!bbk) {
-    add("red", `No ${CLIENT} data`, `Nothing was collected for ${CLIENT}. Verify the Instagram handle in scraper.py before reading anything else on this page.`);
+    add("red", `No ${CLIENT} data`, `Nothing was collected for ${CLIENT}. Verify the handle in scraper.py before reading anything else here.`);
   } else {
     const leader = rows[0];
     if (leader.bank !== CLIENT) {
       add("red", `${esc(leader.bank)} leads engagement share`,
-        `${leader.bank} holds ${pct(leader.engSoV)} of market engagement against ${CLIENT}'s ${pct(bbk.engSoV)} — a gap of ${pct(leader.engSoV - bbk.engSoV)}. Closing it is the single clearest objective for the next quarter.`);
+        `${esc(leader.bank)} holds ${pct(leader.engSoV)} against ${CLIENT}'s ${pct(bbk.engSoV)} — a gap of ${pct(leader.engSoV - bbk.engSoV)}. ${CLIENT} sits ${rows.indexOf(bbk) + 1}${["st","nd","rd"][rows.indexOf(bbk)] || "th"} of ${rows.length}.`);
     } else {
       add("green", `${CLIENT} leads engagement share`,
         `${CLIENT} holds ${pct(bbk.engSoV)} of all engagement, ahead of ${esc(rows[1]?.bank || "the field")}. The task is defending it, not chasing.`);
@@ -352,44 +383,84 @@ function renderRecommendations({ rows }, posts) {
       const index = bbk.engSoV / bbk.audSoV;
       if (index < 0.9) {
         add("red", "Audience is larger than its output",
-          `${CLIENT} holds ${pct(bbk.audSoV)} of followers but earns only ${pct(bbk.engSoV)} of engagement — an index of ${index.toFixed(2)}×. The reach already exists; the content is not converting it. This is a creative problem, not a media-spend problem.`);
+          `${CLIENT} holds ${pct(bbk.audSoV)} of followers but earns only ${pct(bbk.engSoV)} of engagement — an index of ${index.toFixed(2)}×. The reach already exists and is not converting. That is a creative problem, not a media-spend problem.`);
       } else if (index > 1.1) {
         add("green", "Content out-performs audience size",
-          `${CLIENT} earns ${pct(bbk.engSoV)} of engagement from ${pct(bbk.audSoV)} of followers — an index of ${index.toFixed(2)}×. The creative is working; the constraint is reach. Growth spend is justified here.`);
+          `${CLIENT} earns ${pct(bbk.engSoV)} of engagement from ${pct(bbk.audSoV)} of followers — an index of ${index.toFixed(2)}×. The creative works; reach is the constraint. Growth spend is justified.`);
       }
     }
 
-    const rated = rows.filter((r) => r.engRate !== null);
-    const best = rated.slice().sort((a, b) => b.engRate - a.engRate)[0];
+    const rated = rows.filter((r) => r.engRate !== null).sort((a, b) => b.engRate - a.engRate);
+    const best = rated[0];
     if (best && bbk.engRate !== null && best.bank !== CLIENT) {
       const mult = bbk.engRate > 0 ? best.engRate / bbk.engRate : null;
       add("amber", `${esc(best.bank)} has the strongest engagement rate`,
-        `At ${(best.engRate * 100).toFixed(3)}% per follower versus ${CLIENT}'s ${(bbk.engRate * 100).toFixed(3)}%${mult ? ` — ${mult.toFixed(1)}× stronger` : ""}. Audit their last ten posts for format and hook before the next content sprint.`);
+        `${(best.engRate * 100).toFixed(3)}% per follower against ${CLIENT}'s ${(bbk.engRate * 100).toFixed(3)}%${mult ? ` — ${mult.toFixed(1)}× stronger` : ""}. Audit their recent posts for format and hook before the next content sprint.`);
     }
 
     const marketReel = rows.reduce((a, r) => a + r.reels, 0) / Math.max(1, rows.reduce((a, r) => a + r.posts, 0));
     if (bbk.reelShare < marketReel - 0.1) {
       add("amber", "Under-indexed on video",
-        `${pct(bbk.reelShare)} of ${CLIENT}'s tracked posts are video, against a market average of ${pct(marketReel)}. Video is the format Instagram's ranking currently favours; shifting the mix is the cheapest available lever.`);
+        `${pct(bbk.reelShare)} of ${CLIENT}'s tracked posts are video against a market average of ${pct(marketReel)}. Video is the format Instagram's ranking currently favours, and shifting the mix is the cheapest lever available.`);
     }
-  }
 
-  const topPost = [...posts].sort((a, b) =>
-    ((b.likes_count || 0) + (b.comments_count || 0)) - ((a.likes_count || 0) + (a.comments_count || 0)))[0];
-  if (topPost) {
-    add("blue", `Top-performing post in market: ${esc(topPost.bank_name)}`,
-      `${nf.format((topPost.likes_count || 0) + (topPost.comments_count || 0))} interactions. Worth dissecting in the next content review — it is the clearest evidence of what this audience responds to.`);
+    if (campaigns.length && !campaigns.some((c) => c.bank_name === CLIENT)) {
+      add("blue", "Competitors are buying engagement with giveaways",
+        `${esc(campaigns[0].bank_name)} used a prize competition to earn ${nf.format(engOf(campaigns[0]))} interactions in one post. ${CLIENT} ran nothing comparable in this window. It is a legitimate tactic with a real caveat: entrants follow for the prize, and the audience it builds is not necessarily a banking audience.`);
+    }
   }
 
   const tones = {
     red: "border-red-400 bg-red-50", amber: "border-amber-400 bg-amber-50",
     green: "border-emerald-400 bg-emerald-50", blue: "border-blue-400 bg-blue-50",
   };
-  document.getElementById("recommendations").innerHTML = out.map((r) => `
+  $("recommendations").innerHTML = out.map((r) => `
     <div class="border-l-4 ${tones[r.tone]} p-4 rounded-r-lg">
       <h4 class="font-bold text-sm text-slate-900">${r.title}</h4>
       <p class="text-sm text-slate-600 mt-1">${r.body}</p>
     </div>`).join("");
+}
+
+function renderCampaignPanel(campaigns) {
+  if (!campaigns.length) { hide("campaign-panel"); return; }
+  show("campaign-panel");
+
+  const totalAll = ALL_POSTS.reduce((a, p) => a + engOf(p), 0);
+  $("campaign-detail").textContent =
+    `${campaigns.length} post${campaigns.length > 1 ? "s" : ""} earned more than ${OUTLIER_MULTIPLE}× the posting account's own median — the signature of a prize competition rather than normal output.`;
+
+  $("campaign-list").innerHTML = campaigns
+    .sort((a, b) => engOf(b) - engOf(a))
+    .map((c) => `<div class="text-xs text-slate-600">
+        <span class="font-semibold">${esc(c.bank_name)}</span> ·
+        <span class="num">${nf.format(engOf(c))}</span> interactions
+        (<span class="num">${nf.format(c.comments_count || 0)}</span> comments) ·
+        <span class="num">${pct(engOf(c) / totalAll)}</span> of all tracked engagement
+      </div>`).join("");
+
+  const on = "bg-slate-800 text-white", off = "bg-white text-slate-600 hover:bg-slate-50";
+  $("btn-organic").className = "px-4 py-2 transition " + (organicOnly ? on : off);
+  $("btn-all").className = "px-4 py-2 transition border-l border-slate-300 " + (organicOnly ? off : on);
+  $("mode-note").textContent = organicOnly
+    ? "Campaign posts excluded — typical output"
+    : "Everything included — one giveaway dominates";
+}
+
+function render() {
+  const campaigns = ALL_POSTS.filter((p) => p._outlier);
+  const posts = organicOnly ? ALL_POSTS.filter((p) => !p._outlier) : ALL_POSTS;
+  const agg = aggregate(posts, PROFILES);
+
+  renderCampaignPanel(campaigns);
+  renderKpis(agg, posts.length);
+  renderCharts(agg);
+  renderTable(agg);
+  renderRecommendations(agg, posts, campaigns);
+  renderTopPosts(posts);
+
+  $("footer-note").textContent =
+    `${nf.format(posts.length)} of ${nf.format(ALL_POSTS.length)} posts · ${agg.rows.length} banks · ` +
+    `engagement = likes + comments · times in Asia/Bahrain`;
 }
 
 async function load() {
@@ -400,41 +471,36 @@ async function load() {
 
   if (postsRes.error) {
     setStatus("Connection failed", "error");
-    failTo("Could not read bank_posts", `${postsRes.error.message} (code ${postsRes.error.code || "?"}). If this says the table is missing, schema.sql has not been run. If it mentions permission, row-level security is blocking the anon key.`);
+    failTo("Could not read bank_posts",
+      `${postsRes.error.message} (code ${postsRes.error.code || "?"}). If this says the table is missing, schema.sql has not been run. If it mentions permission, row-level security is blocking the anon key.`);
     return;
   }
 
-  const posts = postsRes.data || [];
-  // A missing view is survivable — we lose follower metrics, not the whole page.
-  const profiles = profilesRes.error ? [] : (profilesRes.data || []);
+  ALL_POSTS = postsRes.data || [];
+  PROFILES = profilesRes.error ? [] : (profilesRes.data || []);
 
-  if (posts.length === 0) {
+  if (ALL_POSTS.length === 0) {
     setStatus("No data", "warn", "bank_posts is empty");
     failTo("The database is connected but empty",
-      "bank_posts exists and is readable, but contains zero rows — the scraper has not yet written anything. This is expected until the Apify collector has run successfully at least once.");
+      "bank_posts exists and is readable but contains zero rows — the scraper has not yet written anything.");
     return;
   }
 
-  const agg = aggregate(posts, profiles);
+  flagOutliers(ALL_POSTS);
 
-  if (profiles.length === 0) {
+  if (PROFILES.length === 0) {
     setStatus("Partial data", "warn", "No follower snapshots — audience metrics unavailable");
   } else {
-    const latest = profiles.map((p) => p.scraped_at).sort().pop();
+    const latest = PROFILES.map((p) => p.scraped_at).sort().pop();
     setStatus("Live", "live", "Updated " + new Date(latest).toLocaleString("en-GB", {
       timeZone: "Asia/Bahrain", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
     }));
   }
 
   show("dashboard");
-  renderKpis(agg, posts.length);
-  renderCharts(agg);
-  renderTable(agg);
-  renderRecommendations(agg, posts);
-  renderTopPosts(posts);
-
-  document.getElementById("footer-note").textContent =
-    `${nf.format(posts.length)} posts across ${agg.rows.length} banks · engagement = likes + comments · times shown in Asia/Bahrain`;
+  $("btn-organic").onclick = () => { organicOnly = true; render(); };
+  $("btn-all").onclick = () => { organicOnly = false; render(); };
+  render();
 }
 
 load().catch((e) => {
