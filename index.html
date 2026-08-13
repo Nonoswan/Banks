@@ -343,7 +343,9 @@ function renderTopPosts(posts) {
           </span>
           <span class="text-sm font-bold num whitespace-nowrap">${nf.format(engOf(p))} eng.</span>
         </div>
-        <p class="text-xs text-slate-500 mt-1">${esc((p.caption || "").slice(0, 150)) || "<em>no caption</em>"}</p>
+        <!-- dir="auto" so Arabic captions lay out RTL and Latin ones LTR,
+             decided per string by the browser rather than assumed. -->
+        <p dir="auto" class="text-xs text-slate-500 mt-1">${esc((p.caption || "").slice(0, 150)) || "<em>no caption</em>"}</p>
         <div class="flex gap-3 mt-1">
           <span class="text-xs text-slate-400 num">${nf.format(p.likes_count || 0)} likes · ${nf.format(p.comments_count || 0)} comments</span>
           <a href="${esc(p.post_url)}" target="_blank" rel="noopener noreferrer" class="text-xs text-blue-600 hover:underline">View →</a>
