@@ -24,17 +24,73 @@
   @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
   .live-dot { animation: pulseDot 2s ease-in-out infinite; }
 
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .fade-up { animation: fadeUp .45s ease-out both; }
+
   #btn-export:disabled { opacity: .6; cursor: wait; }
 
   /* Anyone who has asked their OS for less motion gets none of it. */
   @media (prefers-reduced-motion: reduce) {
     .reveal { opacity: 1; transform: none; transition: none; }
     .card:hover { transform: none; }
-    .live-dot { animation: none; }
+    .live-dot, .fade-up { animation: none; }
   }
 </style>
 </head>
 <body class="bg-slate-100 min-h-screen">
+
+<!-- Access gate. Courtesy only — see ACCESS_CODE in the script for why this is
+     not, and cannot be, security on a static page. -->
+<div id="gate" class="hidden fixed inset-0 z-[60] hero overflow-y-auto">
+  <div class="min-h-full flex items-center justify-center p-5 sm:p-8">
+
+    <div id="gate-lock" class="w-full max-w-sm text-center">
+      <div class="mx-auto w-12 h-12 rounded-2xl flex items-center justify-center mb-6" style="background: var(--bbk)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+        </svg>
+      </div>
+      <h1 class="text-white text-xl sm:text-2xl font-bold">BBK Competitor Intelligence</h1>
+      <p class="text-slate-400 text-sm mt-2 mb-7">Prepared for Mohammed Al Aali</p>
+      <form id="gate-form" class="space-y-3">
+        <input id="gate-input" type="password" autocomplete="off" placeholder="Access code"
+          class="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-500
+                 text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-white/40">
+        <button type="submit" class="w-full px-4 py-3 rounded-xl font-semibold text-white transition hover:brightness-110 active:scale-[.98]"
+          style="background: var(--bbk)">Open</button>
+      </form>
+      <p id="gate-error" class="text-red-300 text-sm mt-3 h-5"></p>
+    </div>
+
+    <div id="gate-note" class="hidden w-full max-w-2xl">
+      <div class="bg-white rounded-2xl shadow-2xl p-6 sm:p-10">
+        <p class="text-slate-900 text-lg sm:text-xl font-bold mb-5">Mohammed,</p>
+        <div class="space-y-4 text-slate-700 text-sm sm:text-base leading-relaxed">
+          <p>What you've built at BBK since joining speaks for itself. It just isn't showing up yet
+             where the market can see it.</p>
+          <p>I tracked BBK against five competitors on Instagram across their most recent posts.
+             BBK holds the second-largest audience in Bahrain retail banking, and earns less
+             engagement than an account that size should. That gap is the opportunity — and it
+             reads as a content problem, not a budget one.</p>
+          <p>What follows is a short, honest read on where BBK stands against the field, and what
+             the others are doing differently. I hope it's useful as the bank considers its next
+             chapter.</p>
+        </div>
+        <p class="text-slate-900 font-semibold mt-6">Naheed</p>
+        <button id="gate-continue"
+          class="mt-8 w-full sm:w-auto px-6 py-3 rounded-xl font-semibold text-white transition hover:brightness-110 active:scale-[.98] flex items-center justify-center gap-2"
+          style="background: var(--bbk)">
+          Continue to the dashboard
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <div class="max-w-7xl mx-auto p-3 sm:p-6">
 
   <header class="hero mb-4 rounded-2xl shadow-lg p-5 sm:p-7 text-white">
@@ -196,6 +252,14 @@
 const SUPABASE_URL = "https://kbcdgleigtjmhzfhkdvp.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_JFGvztc25SDhuft7UJMJEg_I2_O4_3M";
 const CLIENT = "BBK";
+
+// Courtesy gate, not security. This page is static, so anyone who opens
+// developer tools can read this value or delete the overlay — and the repo is
+// public, which makes the code readable to anyone who finds it. It exists so
+// the note lands personally, nothing more. For access control that actually
+// holds, use Vercel's Deployment Protection: it runs server-side, before the
+// page is ever sent.
+const ACCESS_CODE = "BBK2026";
 
 const OUTLIER_MULTIPLE = 5;
 
@@ -845,6 +909,45 @@ async function load() {
   $("btn-export").onclick = exportPptx;
   render();
 }
+
+// sessionStorage throws on some file:// origins, so every access is guarded —
+// a storage failure should not be able to block the page behind its own gate.
+const gateSeen = {
+  get() { try { return sessionStorage.getItem("bbk_gate") === "1"; } catch { return false; } },
+  set() { try { sessionStorage.setItem("bbk_gate", "1"); } catch { /* fine */ } },
+};
+
+function setupGate() {
+  if (gateSeen.get()) return;          // already through it this session
+  show("gate");
+  document.body.style.overflow = "hidden";
+
+  $("gate-form").onsubmit = (e) => {
+    e.preventDefault();
+    const entered = $("gate-input").value.trim();
+    if (entered.toLowerCase() !== ACCESS_CODE.toLowerCase()) {
+      $("gate-error").textContent = entered ? "That code isn't right." : "Enter the access code.";
+      $("gate-input").value = "";
+      $("gate-input").focus();
+      return;
+    }
+    $("gate-error").textContent = "";
+    hide("gate-lock");
+    show("gate-note");
+    $("gate-note").classList.add("fade-up");
+    $("gate-continue").focus();
+  };
+
+  $("gate-continue").onclick = () => {
+    gateSeen.set();
+    document.body.style.overflow = "";
+    hide("gate");
+  };
+
+  $("gate-input").focus();
+}
+
+setupGate();
 
 load().catch((e) => {
   console.error(e);
