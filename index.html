@@ -154,19 +154,6 @@
   <main id="dashboard" class="hidden">
   <div id="view-data">
 
-    <section id="campaign-panel" class="reveal hidden mb-5 bg-white border-l-4 border-amber-400 rounded-r-xl shadow-sm p-4 sm:p-5">
-      <h3 class="font-bold text-slate-900 text-sm sm:text-base" id="campaign-headline"></h3>
-      <p class="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed" id="campaign-detail"></p>
-      <div id="campaign-list" class="mt-3 space-y-1"></div>
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4 pt-3 border-t border-slate-100">
-        <span class="text-[10px] uppercase tracking-widest text-slate-400">Showing</span>
-        <div class="inline-flex rounded-lg border border-slate-300 overflow-hidden text-xs font-semibold">
-          <button id="btn-organic" class="px-3 py-1.5 transition">Organic baseline</button>
-          <button id="btn-all" class="px-3 py-1.5 transition border-l border-slate-300">As collected</button>
-        </div>
-        <span class="text-xs text-slate-400" id="mode-note"></span>
-      </div>
-    </section>
 
     <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
       <div class="reveal card bg-white p-4 sm:p-5 rounded-xl shadow-sm border border-slate-200 border-t-4" style="border-top-color: var(--bbk)">
@@ -198,6 +185,21 @@
       <p class="text-xs text-slate-400">Engagement share of voice, ranked</p>
       <p class="text-xs text-slate-500 italic mt-1 mb-5">In short: where BBK places. The figure beside each bar is the distance to the leader.</p>
       <div id="standings" class="space-y-3.5"></div>
+    </section>
+
+    <section id="campaign-panel" class="reveal hidden mb-5 bg-white border-l-4 border-amber-400 rounded-r-xl shadow-sm p-4 sm:p-5">
+      <h3 class="font-bold text-slate-900 text-sm sm:text-base" id="campaign-headline"></h3>
+      <p class="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed" id="campaign-detail"></p>
+      <div id="campaign-visual" class="mt-5"></div>
+      <div id="campaign-list" class="mt-4 space-y-1"></div>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 mt-4 pt-3 border-t border-slate-100">
+        <span class="text-[10px] uppercase tracking-widest text-slate-400">Showing</span>
+        <div class="inline-flex rounded-lg border border-slate-300 overflow-hidden text-xs font-semibold">
+          <button id="btn-organic" class="px-3 py-1.5 transition">Organic baseline</button>
+          <button id="btn-all" class="px-3 py-1.5 transition border-l border-slate-300">As collected</button>
+        </div>
+        <span class="text-xs text-slate-400" id="mode-note"></span>
+      </div>
     </section>
 
     <section class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-5">
@@ -343,6 +345,7 @@
     <section class="reveal card bg-white p-4 sm:p-7 rounded-xl shadow-sm border border-slate-200 mt-5">
       <h3 class="font-bold text-slate-800 text-base sm:text-xl">What To Do Next</h3>
       <p class="text-xs text-slate-400 mb-6">Every point carries the figure it rests on.</p>
+      <div id="rec-scorecard" class="grid grid-cols-3 gap-2 sm:gap-3 mb-4"></div>
       <div id="rec-summary" class="mb-6"></div>
       <div id="recommendations" class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4"></div>
     </section>
@@ -948,13 +951,21 @@ function renderThemes(posts) {
  * Each point carries a single headline figure, because the card layout leads
  * with it and a recommendation that cannot name its number is not evidence.
  */
+/**
+ * Written for a Chief Strategy Officer: position, gap, and what closing it
+ * takes. Each point carries one headline figure and the pair of numbers behind
+ * it, so the card can be read as a picture and the prose stays to a line.
+ */
 function recommendations({ rows }, posts, campaigns) {
   const bbk = rows.find((r) => r.bank === CLIENT);
   const out = [];
-  const add = (tone, metric, metricLabel, title, body) => out.push({ tone, metric, metricLabel, title, body });
+  const add = (tone, metric, metricLabel, title, line, compare) =>
+    out.push({ tone, metric, metricLabel, title, line, compare });
+  const med = (list) => {
+    const v = list.map(engOf).sort((x, y) => x - y);
+    return v.length ? v[v.length >> 1] : 0;
+  };
 
-  // The campaign caveat leads, because it reframes every number under it.
-  //
   // Whether campaigns were excluded is read from the data passed in, not from
   // the page's view state: this runs for the fixed conclusions baseline as well
   // as for whatever the dashboard happens to be showing.
@@ -963,17 +974,20 @@ function recommendations({ rows }, posts, campaigns) {
     const c = campaigns[0];
     const scope = posts.concat(campaigns);
     const allEng = scope.reduce((acc, p) => acc + engOf(p), 0);
-    const shareOfAll = allEng ? engOf(c) / allEng : 0;
-    add("blue", pct(shareOfAll), "from one post", "These figures exclude a competition",
-      `${c.bank_name} ran a prize giveaway earning ${nf.format(engOf(c))} interactions, ${nf.format(c.comments_count || 0)} of them comments. Left in, that single post would account for most of the market's engagement and make every comparison below it meaningless. What follows is typical output.`);
+    add("blue", allEng ? pct(engOf(c) / allEng) : "—", "from one post",
+      "One competition distorts the raw market",
+      `${c.bank_name}'s prize draw, set aside below so the comparison reflects what these banks publish normally.`,
+      [{ label: "That one post", value: engOf(c) }, { label: "Typical post here", value: med(posts) }]);
   } else if (campaigns.length) {
-    add("amber", pct(engOf(campaigns[0]) / rows.reduce((acc, r) => acc + r.engagement, 0)), "from one post",
+    const total = rows.reduce((acc, r) => acc + r.engagement, 0);
+    add("amber", total ? pct(engOf(campaigns[0]) / total) : "—", "from one post",
       "A single competition dominates this view",
-      `${campaigns[0].bank_name}'s giveaway carries most of the tracked engagement. Read this as evidence of what a competition can do, not as a measure of sustained performance.`);
+      "Evidence of what a giveaway can do, not of sustained performance.",
+      [{ label: "That one post", value: engOf(campaigns[0]) }, { label: "Typical post here", value: med(posts) }]);
   }
 
   if (!bbk) {
-    add("red", "—", "no data", `No ${CLIENT} data`, `Nothing was collected for ${CLIENT}. Verify the handle before reading anything else here.`);
+    add("red", "—", "no data", `No ${CLIENT} data`, "Verify the handle before reading anything else here.");
     return out;
   }
 
@@ -982,46 +996,56 @@ function recommendations({ rows }, posts, campaigns) {
   if (leader.bank !== CLIENT) {
     add("red", pct(leader.engSoV - bbk.engSoV), "behind the leader",
       `${leader.bank} leads share of attention`,
-      `${leader.bank} holds ${pct(leader.engSoV)} of the market's engagement against ${CLIENT}'s ${pct(bbk.engSoV)}. ${CLIENT} sits ${ordinal(pos + 1)} of ${rows.length} on the measure that reflects how much of the conversation the bank actually owns.`);
+      `${CLIENT} sits ${ordinal(pos + 1)} of ${rows.length} on the share of conversation it owns.`,
+      [{ label: leader.bank, value: leader.engSoV * 100, unit: "%" },
+       { label: CLIENT, value: bbk.engSoV * 100, unit: "%", self: true }]);
   } else {
     add("green", pct(bbk.engSoV), "share of attention", `${CLIENT} leads share of attention`,
-      `${CLIENT} holds ${pct(bbk.engSoV)} of all engagement, ahead of ${rows[1] ? rows[1].bank : "the field"}. The task is defending the position rather than closing a gap.`);
+      "The task is defending the position rather than closing a gap.",
+      [{ label: CLIENT, value: bbk.engSoV * 100, unit: "%", self: true },
+       { label: rows[1] ? rows[1].bank : "next", value: rows[1] ? rows[1].engSoV * 100 : 0, unit: "%" }]);
   }
 
   if (bbk.audSoV) {
     const index = bbk.engSoV / bbk.audSoV;
+    const pair = [{ label: "Audience owned", value: bbk.audSoV * 100, unit: "%" },
+                  { label: "Attention earned", value: bbk.engSoV * 100, unit: "%", self: true }];
     if (index < 0.9) {
       add("red", index.toFixed(2) + "×", "attention vs audience",
         "The audience is bigger than the return on it",
-        `${CLIENT} holds ${pct(bbk.audSoV)} of the market's followers but captures ${pct(bbk.engSoV)} of its engagement. The audience asset is already built and already paid for; it is not converting. That is a question of what gets published against it, not of how much is spent acquiring more.`);
+        "The reach is already built and paid for. It is not converting.", pair);
     } else if (index > 1.1) {
       add("green", index.toFixed(2) + "×", "attention vs audience",
         "The content outperforms the audience behind it",
-        `${CLIENT} captures ${pct(bbk.engSoV)} of engagement from ${pct(bbk.audSoV)} of followers. What is published is working; reach is the binding constraint, and that one does respond to spend.`);
+        "Reach is the binding constraint — and that one does respond to spend.", pair);
     }
   }
 
   const rated = rows.filter((r) => r.engRate !== null).sort((x, y) => y.engRate - x.engRate);
-  const best = rated[0];
-  if (best && bbk.engRate && best.bank !== CLIENT) {
-    add("amber", (best.engRate / bbk.engRate).toFixed(1) + "×", "strongest yield",
-      `${best.bank} earns far more per follower`,
-      `${best.bank} converts ${(best.engRate * 100).toFixed(3)}% of its followers per post against ${CLIENT}'s ${(bbk.engRate * 100).toFixed(3)}%, from an audience roughly ${Math.round(bbk.followers / Math.max(best.followers, 1))}× smaller. Scale is not what determines this.`);
+  const bestRate = rated[0];
+  if (bestRate && bbk.engRate && bestRate.bank !== CLIENT) {
+    add("amber", (bestRate.engRate / bbk.engRate).toFixed(1) + "×", "strongest yield",
+      `${bestRate.bank} earns far more per follower`,
+      `From an audience roughly ${Math.round(bbk.followers / Math.max(bestRate.followers, 1))}× smaller. Scale is not what decides this.`,
+      [{ label: bestRate.bank, value: bestRate.engRate * 100, unit: "%", dp: 3 },
+       { label: CLIENT, value: bbk.engRate * 100, unit: "%", dp: 3, self: true }]);
   }
 
   const { rows: tRows } = themeRows(posts);
   const heavy = tRows.filter((r) => r.cN >= 2).sort((x, y) => y.cN - x.cN)[0];
   if (heavy && heavy.mAvg && heavy.cAvg < heavy.mAvg * 0.9) {
     add("red", (heavy.cAvg / heavy.mAvg).toFixed(2) + "×", "vs market, same theme",
-      `${CLIENT}'s most-used theme underperforms the market's`,
-      `${heavy.cN} of ${CLIENT}'s posts are ${heavy.label.toLowerCase()}, averaging ${nf.format(Math.round(heavy.cAvg))} against ${nf.format(Math.round(heavy.mAvg))} for the same theme elsewhere. Competitors are not winning with a different subject — they are executing the same one better.`);
+      `${CLIENT}'s most-used theme underperforms`,
+      `${heavy.cN} of ${CLIENT}'s posts are ${heavy.label.toLowerCase()}. Same subject, executed better elsewhere.`,
+      [{ label: "Market", value: heavy.mAvg }, { label: CLIENT, value: heavy.cAvg, self: true }]);
   }
 
   const under = tRows.filter((r) => r.cN <= 1 && r.mAvg && r.mN >= 4).sort((x, y) => y.mAvg - x.mAvg)[0];
   if (under) {
-    add("blue", nf.format(Math.round(under.mAvg)), "market average, best theme",
+    add("blue", nf.format(Math.round(under.mAvg)), "best theme, market",
       `Strongest theme in the market, least used by ${CLIENT}`,
-      `${under.label} averages ${nf.format(Math.round(under.mAvg))} interactions across ${under.mN} posts market-wide, ahead of every other theme, and ${CLIENT} ran ${under.cN === 0 ? "none" : "one"} in this window. The sample is small, so treat it as a position worth testing rather than a settled conclusion.`);
+      `${CLIENT} ran ${under.cN === 0 ? "none" : "one"} in this window. Small sample — a position to test.`,
+      [{ label: under.label, value: under.mAvg }, { label: CLIENT + " overall", value: bbk.avgPerPost, self: true }]);
   }
 
   const fmt = groupStats(posts, FORMATS);
@@ -1029,9 +1053,11 @@ function recommendations({ rows }, posts, campaigns) {
   const leaned = fmt.filter((g) => g.myN >= 2 && g.n >= 3).sort((x, y) => y.myN - x.myN)[0];
   const bestFmt = fmt.filter((g) => g.n >= 3).sort((x, y) => y.avg - x.avg)[0];
   if (leaned && bestFmt && leaned.key !== bestFmt.key) {
-    add("amber", (bestFmt.avg / Math.max(leaned.avg, 1)).toFixed(1) + "×", `${FORMATS.short[bestFmt.key]} vs ${FORMATS.short[leaned.key]}`,
+    add("amber", (bestFmt.avg / Math.max(leaned.avg, 1)).toFixed(1) + "×",
+      `${FORMATS.short[bestFmt.key]} vs ${FORMATS.short[leaned.key]}`,
       `${CLIENT} is weighted towards the weaker format`,
-      `${leaned.label} accounts for ${pct(leaned.myN / myFmtN)} of ${CLIENT}'s posts and averages ${nf.format(Math.round(leaned.avg))} across the market, against ${nf.format(Math.round(bestFmt.avg))} for ${bestFmt.label.toLowerCase()}. ${CLIENT}'s own posts follow the same pattern, so this is a mix decision rather than a production one.`);
+      `${leaned.label} is ${pct(leaned.myN / myFmtN)} of ${CLIENT}'s posts. A mix decision, not a production one.`,
+      [{ label: bestFmt.label, value: bestFmt.avg }, { label: leaned.label, value: leaned.avg, self: true }]);
   }
 
   // Purpose sits in this reader's remit, so it gets its own point rather than
@@ -1041,12 +1067,10 @@ function recommendations({ rows }, posts, campaigns) {
   const purposeG = pur.find((g) => g.key === "purpose");
   const restG = pur.find((g) => g.key === "other");
   if (purposeG && restG && purposeG.n >= 3 && purposeG.avg > restG.avg * 1.15) {
-    const own = purposeG.myN && restG.myAvg
-      ? ` ${CLIENT}'s own ${purposeG.myN === 1 ? "purpose post earns" : purposeG.myN + " purpose posts average"} ${nf.format(Math.round(purposeG.myAvg))} against ${nf.format(Math.round(restG.myAvg))} for the rest of its output — its strongest content in this window.`
-      : "";
     add("green", (purposeG.avg / Math.max(restG.avg, 1)).toFixed(1) + "×", "purpose vs the rest",
-      "Purpose-led content earns more than commercial content",
-      `Posts built around community, education, youth or environment average ${nf.format(Math.round(purposeG.avg))} interactions against ${nf.format(Math.round(restG.avg))} for everything else, across ${purposeG.n} posts market-wide.${own} The sample is small enough that this is a position to test rather than a conclusion — but it is cheap to test, and most of this market has not occupied it.`);
+      "Purpose-led content earns more than commercial",
+      `${CLIENT}'s own: ${nf.format(Math.round(purposeG.myAvg || 0))} against ${nf.format(Math.round(restG.myAvg || 0))}. ${purposeG.n} posts market-wide — a position to test.`,
+      [{ label: "Purpose-led", value: purposeG.avg }, { label: "Everything else", value: restG.avg }]);
   }
 
   const allLangs = groupStats(posts, LANGUAGES);
@@ -1056,12 +1080,32 @@ function recommendations({ rows }, posts, campaigns) {
     // Share is of everything the client posted, not only of the groups big
     // enough to compare — otherwise this disagrees with the panel above it.
     const myTotal = allLangs.reduce((acc, g) => acc + g.myN, 0);
-    add("blue", (top.avg / Math.max(bottom.avg, 1)).toFixed(1) + "×", `${LANGUAGES.short[top.key]} vs ${LANGUAGES.short[bottom.key]}`,
-      `${top.label} content earns the most in this market`,
-      `${top.label} posts average ${nf.format(Math.round(top.avg))} interactions against ${nf.format(Math.round(bottom.avg))} for ${bottom.label.toLowerCase()}, across ${top.n} and ${bottom.n} posts respectively. ${CLIENT} writes ${myTotal ? pct(top.myN / myTotal) : "none"} of its posts that way. Committing to one language per post costs nothing and is the fastest of these to act on.`);
+    add("blue", (top.avg / Math.max(bottom.avg, 1)).toFixed(1) + "×",
+      `${LANGUAGES.short[top.key]} vs ${LANGUAGES.short[bottom.key]}`,
+      `${top.label} content earns the most`,
+      `${CLIENT} writes ${myTotal ? pct(top.myN / myTotal) : "none"} of its posts that way. Costs nothing to change.`,
+      [{ label: top.label, value: top.avg }, { label: bottom.label, value: bottom.avg, self: true }]);
   }
 
   return out;
+}
+
+/** Two bars, scaled to the larger, so the ratio is visible without reading. */
+function compareBars(compare, ink) {
+  if (!compare || !compare.length) return "";
+  const top = Math.max(...compare.map((r) => r.value), 1);
+  return '<div class="mt-3.5 space-y-2">' + compare.map((r) => {
+    const shown = r.unit === "%"
+      ? r.value.toFixed(r.dp || 1) + "%"
+      : nf.format(Math.round(r.value));
+    return `<div class="flex items-center gap-2">
+      <span class="w-20 sm:w-24 shrink-0 text-[10px] leading-tight ${r.self ? "font-bold text-slate-700" : "text-slate-500"}">${esc(r.label)}</span>
+      <div class="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+        <div class="bar" data-w="${((r.value / top) * 100).toFixed(1)}" style="background:${r.self ? ink : "#CBD5E1"}"></div>
+      </div>
+      <span class="w-12 shrink-0 text-right text-[11px] font-bold num text-slate-700">${shown}</span>
+    </div>`;
+  }).join("") + "</div>";
 }
 
 function renderRecommendations(agg, posts, campaigns) {
@@ -1075,32 +1119,48 @@ function renderRecommendations(agg, posts, campaigns) {
 
   $("recommendations").innerHTML = recs.map((r) => {
     const t = tones[r.tone] || tones.blue;
-    return `<div class="reveal card bg-white border ${t.ring} rounded-xl p-4 sm:p-5 flex gap-4 items-start">
-      <div class="shrink-0 w-16 sm:w-20 text-center">
-        <div class="text-xl sm:text-2xl font-extrabold num leading-none" style="color:${t.ink}">${esc(r.metric)}</div>
-        <div class="text-[9px] sm:text-[10px] uppercase tracking-wide text-slate-400 mt-1.5 leading-tight">${esc(r.metricLabel)}</div>
+    return `<div class="reveal card bg-white border ${t.ring} rounded-xl p-4 sm:p-5">
+      <div class="flex gap-4 items-start">
+        <div class="shrink-0 w-16 sm:w-20 text-center">
+          <div class="text-xl sm:text-2xl font-extrabold num leading-none" style="color:${t.ink}">${esc(r.metric)}</div>
+          <div class="text-[9px] uppercase tracking-wide text-slate-400 mt-1.5 leading-tight">${esc(r.metricLabel)}</div>
+        </div>
+        <div class="min-w-0 border-l border-slate-100 pl-4">
+          <h4 class="font-bold text-sm text-slate-900 leading-snug">${esc(r.title)}</h4>
+          <p class="text-xs text-slate-500 mt-1 leading-relaxed">${esc(r.line)}</p>
+        </div>
       </div>
-      <div class="min-w-0 border-l border-slate-100 pl-4">
-        <h4 class="font-bold text-sm text-slate-900 leading-snug">${esc(r.title)}</h4>
-        <p class="text-xs sm:text-sm text-slate-600 mt-1.5 leading-relaxed">${esc(r.body)}</p>
-      </div>
+      ${compareBars(r.compare, t.ink)}
     </div>`;
   }).join("");
 
-  // Bottom line, stated before the detail rather than left to be inferred.
+  requestAnimationFrame(() => {
+    $("recommendations").querySelectorAll(".bar").forEach((bar, i) => {
+      setTimeout(() => { bar.style.width = bar.dataset.w + "%"; }, REDUCED ? 0 : i * 60);
+    });
+  });
+
+  // Rank chips: three numbers that carry the whole argument at a glance.
   const bbk = agg.rows.find((r) => r.bank === CLIENT);
-  let line = "";
   if (bbk && bbk.audSoV) {
-    const byAud = [...agg.rows].sort((x, y) => y.audSoV - x.audSoV);
-    const byRate = agg.rows.filter((r) => r.engRate !== null).sort((x, y) => y.engRate - x.engRate);
-    line = `${CLIENT} holds the ${ordinal(byAud.findIndex((r) => r.bank === CLIENT) + 1)} largest audience of ${agg.rows.length} banks ` +
-      `but ranks ${ordinal(agg.rows.indexOf(bbk) + 1)} on share of attention and ${ordinal(byRate.findIndex((r) => r.bank === CLIENT) + 1)} on attention earned per follower. ` +
-      `The audience is already built. What is published against it is where the gap sits — and language, format and theme are all measurable, all cheap to change, and all shown below.`;
+    const n = agg.rows.length;
+    const chips = [
+      ["Audience owned", [...agg.rows].sort((x, y) => y.audSoV - x.audSoV).findIndex((r) => r.bank === CLIENT) + 1],
+      ["Attention earned", agg.rows.indexOf(bbk) + 1],
+      ["Return per follower", agg.rows.filter((r) => r.engRate !== null).sort((x, y) => y.engRate - x.engRate).findIndex((r) => r.bank === CLIENT) + 1],
+    ];
+    $("rec-scorecard").innerHTML = chips.map(([label, rank]) => `
+      <div class="rounded-xl border border-slate-200 bg-white p-3 sm:p-4 text-center">
+        <div class="text-2xl sm:text-3xl font-extrabold num" style="color:${rank <= 2 ? "#059669" : rank >= n - 1 ? "#DC2626" : "var(--bbk)"}">${ordinal(rank)}</div>
+        <div class="text-[10px] sm:text-xs text-slate-500 mt-1 leading-tight">${esc(label)}</div>
+        <div class="text-[9px] text-slate-400">of ${n} banks</div>
+      </div>`).join("");
   }
-  $("rec-summary").innerHTML = line
-    ? `<div class="rounded-xl p-4 sm:p-6 text-white" style="background: var(--bbk)">
+
+  $("rec-summary").innerHTML = bbk && bbk.audSoV
+    ? `<div class="rounded-xl p-4 sm:p-5 text-white" style="background: var(--bbk)">
          <p class="text-[10px] uppercase tracking-widest opacity-60">Bottom line</p>
-         <p class="text-sm sm:text-base font-semibold mt-2 leading-relaxed">${esc(line)}</p>
+         <p class="text-sm sm:text-base font-semibold mt-2 leading-relaxed">The audience is already built. The gap is in what gets published against it — and language, format and theme are all measurable and cheap to change.</p>
        </div>`
     : "";
 }
@@ -1146,6 +1206,36 @@ function renderCampaignPanel(campaigns) {
   $("campaign-detail").textContent =
     `${campaigns.length === 1 ? "One post" : campaigns.length + " posts"} earned more than ${OUTLIER_MULTIPLE}× the posting account's own median, which is the signature of a giveaway rather than normal output. ` +
     `Left in, ${campaigns.length === 1 ? "it alone" : "they"} would decide every ranking below. The default view sets ${campaigns.length === 1 ? "it" : "them"} aside so the comparison reflects what these banks publish week to week.`;
+  // One post against everything else. The ratio is the finding — no imagery
+  // needed, and nothing implied about spend, which we do not have.
+  const others = ALL_POSTS.filter((p) => !p._outlier);
+  const otherEng = others.reduce((acc, p) => acc + engOf(p), 0);
+  const campEng = campaigns.reduce((acc, p) => acc + engOf(p), 0);
+  const peak = Math.max(campEng, otherEng, 1);
+  const row = (label, value, colour, strong) => `
+    <div>
+      <div class="flex justify-between items-baseline gap-3 mb-1.5">
+        <span class="text-xs sm:text-sm ${strong ? "font-bold text-slate-800" : "font-semibold text-slate-600"}">${label}</span>
+        <span class="text-sm sm:text-base font-extrabold num" style="color:${colour}">${nf.format(value)}</span>
+      </div>
+      <div class="h-4 rounded-full bg-slate-100 overflow-hidden">
+        <div class="bar" data-w="${((value / peak) * 100).toFixed(1)}" style="background:${colour}"></div>
+      </div>
+    </div>`;
+
+  $("campaign-visual").innerHTML =
+    `<div class="space-y-3.5">
+      ${row(campaigns.length === 1 ? "That one giveaway post" : `${campaigns.length} giveaway posts`, campEng, "#D97706", true)}
+      ${row(`The other ${nf.format(others.length)} posts, all ${new Set(others.map((p) => p.bank_handle)).size} banks combined`, otherEng, "#94A3B8", false)}
+    </div>
+    <p class="text-xs text-slate-500 mt-3.5">${(campEng / Math.max(otherEng, 1)).toFixed(1)}× the entire market's normal output, from ${campaigns.length === 1 ? "a single post" : `${campaigns.length} posts`}.</p>`;
+
+  requestAnimationFrame(() => {
+    $("campaign-visual").querySelectorAll(".bar").forEach((bar, i) => {
+      setTimeout(() => { bar.style.width = bar.dataset.w + "%"; }, REDUCED ? 0 : i * 140);
+    });
+  });
+
   $("campaign-list").innerHTML = campaigns.sort((a, b) => engOf(b) - engOf(a)).map((c) => `
     <div class="text-xs text-slate-600"><span class="font-semibold">${esc(c.bank_name)}</span> ·
       <span class="num">${nf.format(engOf(c))}</span> interactions
@@ -1308,7 +1398,14 @@ async function exportPptx() {
       const chunk = recs.slice(i, i + PER_SLIDE);
       const s = titled(i === 0 ? "What To Do Next" : "What To Do Next (cont.)");
       // Lead each heading with its figure, as the page does.
-      s.addText(stackRuns(chunk.map((r) => [`${r.metric}  ·  ${r.title}`, r.body])),
+      // Slides carry the comparison figures too — the page shows them as bars,
+      // and a deck read without the page should not lose them.
+      s.addText(stackRuns(chunk.map((r) => [
+        `${r.metric}  ·  ${r.title}`,
+        r.line + (r.compare && r.compare.length
+          ? "   (" + r.compare.map((c) => `${c.label} ${c.unit === "%" ? c.value.toFixed(c.dp || 1) + "%" : nf.format(Math.round(c.value))}`).join("  vs  ") + ")"
+          : ""),
+      ])),
         { x: 0.5, y: 1.15, w: 9, h: 4.1, valign: "top" });
     }
 
