@@ -168,20 +168,26 @@ function failTo(title, body) {
 function aggregate(posts, profiles) {
   const byBank = new Map();
 
+  // Keyed by handle, not display name. Handles are what actually identify an
+  // account, and stale snapshots from since-corrected handles share the same
+  // bank_name — keying by name would let a dormant lookalike's follower count
+  // overwrite the real one.
   for (const p of posts) {
-    const name = p.bank_name;
-    if (!name) continue;
-    if (!byBank.has(name)) {
-      byBank.set(name, { bank: name, handle: p.bank_handle, posts: 0, engagement: 0, followers: 0, reels: 0 });
+    const handle = p.bank_handle;
+    if (!handle) continue;
+    if (!byBank.has(handle)) {
+      byBank.set(handle, { bank: p.bank_name, handle, posts: 0, engagement: 0, followers: 0, reels: 0 });
     }
-    const row = byBank.get(name);
+    const row = byBank.get(handle);
     row.posts += 1;
     row.engagement += (p.likes_count || 0) + (p.comments_count || 0);
     if ((p.post_type || "").toLowerCase() === "video") row.reels += 1;
   }
 
+  // Profiles for handles with no posts are ignored entirely, which is how
+  // superseded rows drop out without needing to be deleted.
   for (const prof of profiles) {
-    const row = byBank.get(prof.bank_name);
+    const row = byBank.get(prof.bank_handle);
     if (row) row.followers = prof.followers_count || 0;
   }
 

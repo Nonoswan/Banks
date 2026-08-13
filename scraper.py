@@ -23,18 +23,23 @@ APIFY_TOKEN = os.environ.get("APIFY_TOKEN")
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
-# Instagram handles, each verified against the live account's og:title on
-# 13 Aug 2026. Re-verify if you add one: a wrong handle silently produces a
-# bank with zero engagement, which is worse than an error because it reads
-# as a finding rather than a bug.
+# Instagram handles, verified 13 Aug 2026 by follower count, not by account
+# name. Checking the name alone is not enough: alsalambank, bisbonline and
+# ilabank are all dormant accounts carrying the right names with 3-5 followers
+# and zero posts. A wrong handle produces a bank with no engagement, which
+# reads as a finding rather than a bug — always confirm the follower count.
 BANKS = [
-    {"name": "BBK", "handle": "bbk_online"},
-    {"name": "NBB", "handle": "nbbonline"},
-    {"name": "Al Salam Bank", "handle": "alsalambank"},
-    {"name": "BisB", "handle": "bisbonline"},
-    {"name": "NBK Bahrain", "handle": "nbkbahrain"},
-    {"name": "ila Bank", "handle": "ilabank"},
+    {"name": "BBK", "handle": "bbk_online"},            # 233K
+    {"name": "NBB", "handle": "nbbonline"},             # 199K
+    {"name": "Al Salam Bank", "handle": "alsalambank_bh"},     # 303K
+    {"name": "BisB", "handle": "bahrainislamicbank"},   # 146K
+    {"name": "NBK Bahrain", "handle": "nbkbahrain"},    # 54K
+    {"name": "ila Bank", "handle": "ilabankbhr"},       # 216K
 ]
+
+# A live bank account has far more than this. Anything at or below it is a
+# dormant lookalike or a blocked fetch, never a real result.
+MIN_PLAUSIBLE_FOLLOWERS = 1000
 
 POSTS_PER_BANK = 10
 APIFY_ACTOR = "apify~instagram-scraper"
@@ -115,6 +120,14 @@ def main() -> None:
             failures.append(f"{handle}: {item['error']}")
             continue
 
+        followers = item.get("followersCount") or 0
+        if followers < MIN_PLAUSIBLE_FOLLOWERS:
+            failures.append(
+                f"{handle}: only {followers} followers — dormant lookalike or "
+                f"blocked fetch, not a live bank account"
+            )
+            continue
+
         profile_rows.append(
             {
                 "bank_name": bank_name,
@@ -167,14 +180,21 @@ def main() -> None:
     for failure in failures:
         print(f"  ! {failure}", file=sys.stderr)
 
-    # Fail loudly. The old scraper's defining bug was exiting 0 on total failure,
-    # so a green tick meant nothing. These are the two states worth alerting on.
+    # Fail loudly. Partial failure has to be fatal too: an earlier version only
+    # checked these two aggregates, so a run where 3 of 6 banks returned nothing
+    # printed warnings and still exited 0 — the same silent-green bug this
+    # scraper was written to remove.
     if not post_rows:
         sys.exit("FATAL: no posts collected — nothing was written.")
     if len(profile_rows) < len(BANKS):
         sys.exit(
             f"FATAL: expected {len(BANKS)} profiles, got {len(profile_rows)}. "
             "Check the handles in BANKS."
+        )
+    if failures:
+        sys.exit(
+            f"FATAL: {len(failures)} bank(s) failed:\n  "
+            + "\n  ".join(failures)
         )
 
 
