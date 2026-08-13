@@ -107,6 +107,28 @@
     </section>
 
     <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
+      <h3 class="font-bold text-slate-800 mb-1">Content Themes</h3>
+      <p class="text-xs text-slate-400 mb-4">Posts classified by keyword, Arabic and English. Ten posts per bank is a
+        small window — read these as a signal worth testing, not a settled result.</p>
+      <div id="theme-callout" class="mb-4"></div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+          <thead>
+            <tr class="border-b-2 border-slate-200 text-xs font-semibold text-slate-500 uppercase">
+              <th class="py-3 px-3">Theme</th>
+              <th class="py-3 px-3 text-right">BBK posts</th>
+              <th class="py-3 px-3 text-right">BBK avg</th>
+              <th class="py-3 px-3 text-right">vs BBK average</th>
+              <th class="py-3 px-3 text-right">Market posts</th>
+              <th class="py-3 px-3 text-right">Market avg</th>
+            </tr>
+          </thead>
+          <tbody id="theme-body" class="text-slate-700"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-6">
       <h3 class="font-bold text-slate-800 mb-4">Full Breakdown</h3>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-sm">
@@ -145,6 +167,32 @@ const CLIENT = "BBK";
 // campaign spike, not typical output. Giveaways ("comment to win") routinely
 // land 100x a normal post and would otherwise decide the entire ranking.
 const OUTLIER_MULTIPLE = 5;
+
+// Keyword themes, checked in order — first match wins. Reward comes first
+// deliberately: "deposit more and win" is a prize post that happens to mention
+// a product, and classing it as product would bury the effect being measured.
+// English terms are word-bounded so "win" does not match "window"; Arabic
+// terms are matched as substrings, since \b does not apply to Arabic script.
+const THEMES = [
+  {
+    key: "reward",
+    label: "Prizes & rewards",
+    re: /\b(prize|prizes|win|wins|winner|winners|reward|rewards|draw|giveaway|competition|jackpot|hayrat)\b|جائزة|جوائز|الفوز|فائز|اربح|سحب|مسابقة|مكافآت|الهيرات/i,
+  },
+  {
+    key: "product",
+    label: "Products & services",
+    re: /\b(card|cards|account|accounts|financing|finance|loan|loans|app|mobile|mastercard|visa|savings|deposit|transfer)\b|بطاقة|بطاقات|تمويل|حساب|تطبيق|ادخار|وديعة|أودع|تحويل/i,
+  },
+  {
+    key: "community",
+    label: "Community & events",
+    re: /\b(school|schools|student|students|programme|program|ceremony|sponsor|sponsorship|community|initiative|graduation|forum|festival|event)\b|مدرسة|المدارس|طلبة|برنامج|حفل|رعاية|مجتمع|فعالية|مبادرة/i,
+  },
+];
+const OTHER = { key: "other", label: "Everything else" };
+
+const classify = (p) => (THEMES.find((t) => t.re.test(p.caption || "")) || OTHER).key;
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -448,6 +496,71 @@ function renderCampaignPanel(campaigns) {
     : "Everything included — one giveaway dominates";
 }
 
+function renderThemes(posts) {
+  const mean = (list) => (list.length ? list.reduce((a, p) => a + engOf(p), 0) / list.length : null);
+  const clientPosts = posts.filter((p) => p.bank_name === CLIENT);
+  const clientAvg = mean(clientPosts);
+
+  const rows = [...THEMES, OTHER].map((theme) => {
+    const inTheme = (list) => list.filter((p) => classify(p) === theme.key);
+    const c = inTheme(clientPosts), m = inTheme(posts);
+    return {
+      label: theme.label,
+      cN: c.length, cAvg: mean(c),
+      mN: m.length, mAvg: mean(m),
+      // Against BBK's own average, so the question is "does this theme beat
+      // their normal output", not "does BBK beat the market".
+      index: clientAvg && mean(c) ? mean(c) / clientAvg : null,
+    };
+  }).filter((r) => r.mN > 0);
+
+  $("theme-body").innerHTML = rows.map((r) => {
+    const strong = r.index !== null && r.index >= 1.2 && r.cN >= 2;
+    const weak = r.index !== null && r.index < 0.8 && r.cN >= 2;
+    const idx = r.index === null
+      ? "<span class='text-slate-300'>—</span>"
+      : `<span class="${strong ? "text-emerald-600 font-bold" : weak ? "text-red-600" : "text-slate-500"}">${r.index.toFixed(2)}×</span>`;
+    return `<tr class="border-b border-slate-100 ${strong ? "bg-emerald-50" : ""}">
+      <td class="py-3 px-3 font-medium">${esc(r.label)}</td>
+      <td class="py-3 px-3 text-right num">${r.cN || "<span class='text-slate-300'>0</span>"}</td>
+      <td class="py-3 px-3 text-right num">${r.cAvg === null ? "<span class='text-slate-300'>—</span>" : nf.format(Math.round(r.cAvg))}</td>
+      <td class="py-3 px-3 text-right num">${idx}</td>
+      <td class="py-3 px-3 text-right num">${r.mN}</td>
+      <td class="py-3 px-3 text-right num">${r.mAvg === null ? "—" : nf.format(Math.round(r.mAvg))}</td>
+    </tr>`;
+  }).join("");
+
+  // Only call a winner when BBK has at least two posts in the theme. One post
+  // above average is noise, and presenting it as a finding would be wrong.
+  const best = rows
+    .filter((r) => r.cN >= 2 && r.index !== null && r.index >= 1.2)
+    .sort((a, b) => b.index - a.index)[0];
+
+  const thin = rows.filter((r) => r.cN === 1 && r.index !== null && r.index >= 1.2);
+
+  let html = "";
+  if (best) {
+    html = `<div class="border-l-4 border-emerald-400 bg-emerald-50 p-4 rounded-r-lg">
+      <h4 class="font-bold text-sm text-slate-900">${CLIENT}'s strongest theme: ${esc(best.label)}</h4>
+      <p class="text-sm text-slate-600 mt-1">These posts average ${nf.format(Math.round(best.cAvg))} interactions against
+      ${CLIENT}'s overall ${nf.format(Math.round(clientAvg))} — ${best.index.toFixed(1)}× their normal output, across
+      ${best.cN} posts. ${CLIENT} already knows what this audience responds to; the gap is how often it runs.</p>
+    </div>`;
+  } else if (thin.length) {
+    html = `<div class="border-l-4 border-amber-400 bg-amber-50 p-4 rounded-r-lg">
+      <h4 class="font-bold text-sm text-slate-900">Possible signal: ${esc(thin[0].label)}</h4>
+      <p class="text-sm text-slate-600 mt-1">${CLIENT}'s single post in this theme earned
+      ${nf.format(Math.round(thin[0].cAvg))} against an average of ${nf.format(Math.round(clientAvg))} —
+      ${thin[0].index.toFixed(1)}×. That is one post, not a pattern. Worth widening the window before acting on it.</p>
+    </div>`;
+  } else if (clientPosts.length) {
+    html = `<div class="border-l-4 border-slate-300 bg-slate-50 p-4 rounded-r-lg">
+      <p class="text-sm text-slate-600">No theme clears ${CLIENT}'s own average by a meaningful margin in this window.</p>
+    </div>`;
+  }
+  $("theme-callout").innerHTML = html;
+}
+
 function render() {
   const campaigns = ALL_POSTS.filter((p) => p._outlier);
   const posts = organicOnly ? ALL_POSTS.filter((p) => !p._outlier) : ALL_POSTS;
@@ -457,6 +570,7 @@ function render() {
   renderKpis(agg, posts.length);
   renderCharts(agg);
   renderTable(agg);
+  renderThemes(posts);
   renderRecommendations(agg, posts, campaigns);
   renderTopPosts(posts);
 
