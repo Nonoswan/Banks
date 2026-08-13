@@ -1420,6 +1420,17 @@ function setupGate() {
   $("gate-input").focus();
 }
 
+// Shift+L replays the welcome. Query strings are awkward on a file:// URL —
+// typed as a Windows path, "index.html?lock" makes the browser look for a file
+// of that literal name — so rehearsing should not depend on editing the
+// address bar. Ignored while typing, so it cannot fire from the code field.
+window.addEventListener("keydown", (e) => {
+  const typing = e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName || "");
+  if (typing || !e.shiftKey || e.key !== "L") return;
+  try { sessionStorage.removeItem("bbk_gate"); } catch { /* fine */ }
+  location.reload();
+});
+
 setupGate();
 initScrollProgress();
 
