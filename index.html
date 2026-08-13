@@ -269,7 +269,7 @@
       <p class="text-xs text-slate-500 italic mt-1 mb-5">In short: which kinds of post earn most. The small figure after each number is how many posts sit behind it — treat anything under three lightly.</p>
       <div id="format-body" class="space-y-3.5 mb-7"></div>
       <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+        <table class="w-full min-w-[34rem] text-left border-collapse text-xs sm:text-sm">
           <thead id="format-head"></thead>
           <tbody id="format-table" class="text-slate-700"></tbody>
         </table>
@@ -284,7 +284,7 @@
       <p class="text-xs text-slate-500 italic mt-1 mb-5">In short: whether writing in Arabic, English or a mix of both changes how much a post earns.</p>
       <div id="language-body" class="space-y-3.5 mb-7"></div>
       <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+        <table class="w-full min-w-[34rem] text-left border-collapse text-xs sm:text-sm">
           <thead id="language-head"></thead>
           <tbody id="language-table" class="text-slate-700"></tbody>
         </table>
@@ -299,7 +299,7 @@
       <p class="text-xs text-slate-500 italic mt-1 mb-5">In short: whether content built around purpose earns more attention than content built around products — and who in this market is publishing it.</p>
       <div id="purpose-body" class="space-y-3.5 mb-7"></div>
       <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+        <table class="w-full min-w-[34rem] text-left border-collapse text-xs sm:text-sm">
           <thead id="purpose-head"></thead>
           <tbody id="purpose-table" class="text-slate-700"></tbody>
         </table>
@@ -313,7 +313,7 @@
         small window — read these as a signal worth testing, not a settled result.</p>
       <div id="theme-callout" class="mb-4"></div>
       <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+        <table class="w-full min-w-[34rem] text-left border-collapse text-xs sm:text-sm">
           <thead>
             <tr class="border-b-2 border-slate-200 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase">
               <th class="py-3 px-2 sm:px-3">Theme</th>
@@ -333,7 +333,7 @@
       <h3 class="font-bold text-slate-800 text-sm sm:text-base">Full Breakdown</h3>
       <p class="text-xs text-slate-500 italic mt-1 mb-4">In short: every figure behind the charts above, per bank.</p>
       <div class="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
-        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+        <table class="w-full min-w-[34rem] text-left border-collapse text-xs sm:text-sm">
           <thead>
             <tr class="border-b-2 border-slate-200 text-[10px] sm:text-xs font-semibold text-slate-500 uppercase">
               <th class="py-3 px-2 sm:px-3">Bank</th>
@@ -649,13 +649,22 @@ function renderCharts({ rows }) {
   const labels = rows.map((r) => r.bank);
   const colours = rows.map(colourFor);
 
+  // Six bank names across a phone-width axis collide, and Chart.js resolves
+  // that by dropping labels rather than rotating them — so bars end up
+  // unlabelled. Rotating and disabling autoSkip keeps every bank named.
+  const narrow = window.innerWidth < 640;
+  const xAxis = {
+    ticks: { font: { size: narrow ? 8 : 10 }, autoSkip: false,
+             maxRotation: narrow ? 60 : 0, minRotation: narrow ? 60 : 0 },
+  };
+
   CHARTS.push(new Chart($("chart-sov"), {
     type: "doughnut",
     data: { labels, datasets: [{ data: rows.map((r) => r.engagement), backgroundColor: colours, borderWidth: 2, borderColor: "#fff", hoverOffset: 10 }] },
     options: {
       maintainAspectRatio: false, animation: anim,
       plugins: {
-        legend: { position: window.innerWidth < 640 ? "bottom" : "right", labels: { boxWidth: 12, font: { size: 11 }, padding: 10 } },
+        legend: { position: narrow ? "bottom" : "right", labels: { boxWidth: 12, font: { size: narrow ? 10 : 11 }, padding: narrow ? 8 : 10 } },
         tooltip: { callbacks: { label: (c) => `${c.label}: ${nf.format(c.raw)} (${pct(rows[c.dataIndex].engSoV)})` } },
       },
     },
@@ -668,7 +677,7 @@ function renderCharts({ rows }) {
     options: {
       maintainAspectRatio: false, animation: barAnim,
       plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.raw.toFixed(3) + "% of followers engage per post" } } },
-      scales: { y: { beginAtZero: true, ticks: { callback: (v) => v.toFixed(2) + "%" } }, x: { ticks: { font: { size: 10 } } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: (v) => v.toFixed(2) + "%" } }, x: xAxis },
     },
   }));
 
@@ -684,7 +693,7 @@ function renderCharts({ rows }) {
     options: {
       maintainAspectRatio: false, animation: barAnim,
       plugins: { tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${c.raw.toFixed(1)}%` } } },
-      scales: { y: { beginAtZero: true, ticks: { callback: (v) => v + "%" } }, x: { ticks: { font: { size: 10 } } } },
+      scales: { y: { beginAtZero: true, ticks: { callback: (v) => v + "%" } }, x: xAxis },
     },
   }));
 }
@@ -1397,6 +1406,18 @@ async function load() {
 
   render();
   renderRecommendations(BASELINE.agg, BASELINE.posts, BASELINE.campaigns);
+
+  // Axis rotation and legend placement are decided when a chart is built, so
+  // rotating a phone would otherwise keep the previous layout. Only redraw when
+  // the breakpoint is actually crossed — every scroll on mobile fires resize as
+  // the address bar hides.
+  let wasNarrow = window.innerWidth < 640;
+  window.addEventListener("resize", () => {
+    const isNarrow = window.innerWidth < 640;
+    if (isNarrow === wasNarrow) return;
+    wasNarrow = isNarrow;
+    render();
+  }, { passive: true });
 }
 
 // sessionStorage throws on some file:// origins, so every access is guarded —
